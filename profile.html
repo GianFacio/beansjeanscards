@@ -85,7 +85,7 @@
             <p>New cards are added to your collection immediately.</p>
             <form id="community-card-form" class="community-form">
                 <label>Card name
-                    <input name="name" type="text" maxlength="120" placeholder="Set, player, and card name" required>
+                    <textarea name="name" class="card-name-input" rows="1" maxlength="120" placeholder="Set, player, and card name" required></textarea>
                 </label>
                 <label>Player or card detail
                     <input name="detail" type="text" maxlength="80" placeholder="Player name or other detail">
@@ -162,7 +162,7 @@
                         <form id="community-card-edit-form" class="community-form">
                             <h2>Edit card</h2>
                             <label>Card name
-                                <textarea name="name" rows="2" maxlength="120" required></textarea>
+                                <textarea name="name" class="card-name-input" rows="1" maxlength="120" required></textarea>
                             </label>
                             <label>Player or card detail
                                 <input name="detail" type="text" maxlength="80">

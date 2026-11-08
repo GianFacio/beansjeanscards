@@ -1129,6 +1129,12 @@ h2 {
     resize: vertical
 }
 
+.community-form textarea.card-name-input {
+    min-height: 42px;
+    overflow: hidden;
+    resize: none
+}
+
 .community-search-row .filter,
 .community-form > .filter {
     min-height: 42px;

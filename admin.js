@@ -51,10 +51,7 @@ signOutButton.addEventListener('click', async () => {
         if (!confirmed) return;
         const { error } = await window.getStoreSupabaseClient().auth.signOut();
         if (error) throw error;
-        window.setStoreAdminAccess(false);
-        dashboard.hidden = true;
-        accessRequired.hidden = false;
-        showMessage('Signed out.');
+        window.location.assign('index.html');
     } catch (error) {
         showMessage(`Unable to sign out: ${error.message}`, true);
     } finally {

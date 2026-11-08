@@ -65,6 +65,19 @@
     const removedSides = new Set();
     const previewUrls = new Map();
 
+    function resizeCardName(input) {
+        input.style.height = 'auto';
+        input.style.height = `${input.scrollHeight + input.offsetHeight - input.clientHeight}px`;
+    }
+
+    for (const form of [cardForm, cardEditForm]) {
+        form.elements.name.addEventListener('input', () => resizeCardName(form.elements.name));
+    }
+    window.addEventListener('resize', () => {
+        if (cardEditor.open) resizeCardName(cardForm.elements.name);
+        if (cardDialog.open && !cardEditPanel.hidden) resizeCardName(cardEditForm.elements.name);
+    });
+
     function renderPhotoSlot(input, currentUrl = '') {
         const oldUrl = previewUrls.get(input);
         if (oldUrl) URL.revokeObjectURL(oldUrl);
@@ -140,7 +153,7 @@
     });
 
     window.addEventListener('community-session-changed', event => {
-        if (currentUser !== undefined && event.detail.session?.user?.id !== currentUser?.id) {
+        if (!window.communitySignOutInProgress && currentUser !== undefined && event.detail.session?.user?.id !== currentUser?.id) {
             window.location.reload();
         }
     });
@@ -482,7 +495,7 @@
 
     async function loadCards(profile) {
         collection.hidden = false;
-        collectionTitle.textContent = 'Card Collection';
+        collectionTitle.textContent = isOwner ? 'My Collection' : 'Card Collection';
         if (isAdmin && !isOwner) {
             document.querySelector('#collection-editor h2').textContent = `Add a card to @${profile.username}’s collection`;
             cardForm.querySelector('[type="submit"]').textContent = 'Add card for collector';
@@ -573,12 +586,13 @@
         setMessage(editMessage, '');
         editor.showModal();
         editToggle.setAttribute('aria-expanded', 'true');
-        profileForm.elements.display_name.focus();
+        window.focusStoreTextInput(profileForm.elements.display_name);
     });
     addCardToggle.addEventListener('click', () => {
         cardEditor.showModal();
         addCardToggle.setAttribute('aria-expanded', 'true');
-        cardForm.elements.name.focus();
+        resizeCardName(cardForm.elements.name);
+        window.focusStoreTextInput(cardForm.elements.name);
     });
     document.querySelector('#profile-editor-close').addEventListener('click', () => {
         if (!profileForm.querySelector('[type="submit"]').disabled) editor.close();
@@ -647,7 +661,8 @@
             : 'Only a store admin can change photos for this linked card.';
         setMessage(cardEditMessage, '');
         cardEditPanel.hidden = false;
-        cardEditForm.elements.name.focus();
+        resizeCardName(cardEditForm.elements.name);
+        window.focusStoreTextInput(cardEditForm.elements.name);
     });
     document.querySelector('#community-card-edit-cancel').addEventListener('click', () => {
         cardEditForm.reset();

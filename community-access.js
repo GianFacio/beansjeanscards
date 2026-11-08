@@ -7,6 +7,7 @@ const communityAuthTitle = document.querySelector('#community-auth-title');
 const communityAccountButton = document.querySelector('#community-join-trigger');
 const communityMyProfile = document.querySelector('#community-my-profile');
 const communitySignOut = document.querySelector('#community-sign-out');
+window.communitySignOutInProgress = false;
 
 function showCommunityAuthMessage(form, message, isError = false) {
     const target = form.querySelector('.community-form-message');
@@ -188,9 +189,12 @@ communitySignOut.addEventListener('click', async () => {
             confirmLabel: 'Sign out'
         });
         if (!confirmed) return;
+        window.communitySignOutInProgress = true;
         const { error } = await communityClient.auth.signOut();
         if (error) throw error;
+        window.location.assign('index.html');
     } catch (error) {
+        window.communitySignOutInProgress = false;
         window.alert(`Unable to sign out: ${error.message}`);
     } finally {
         communitySignOut.disabled = false;

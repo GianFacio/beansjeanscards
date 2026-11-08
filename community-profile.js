@@ -8,6 +8,20 @@
     const editor = document.querySelector('#profile-editor');
     const profileForm = document.querySelector('#profile-edit-form');
     const editMessage = document.querySelector('#profile-edit-message');
+    const avatarInput = profileForm.elements.avatar;
+    const avatarPicker = document.querySelector('#profile-avatar-picker');
+    const avatarPreview = document.querySelector('#profile-avatar-preview');
+    const avatarAction = document.querySelector('#profile-avatar-action');
+    const avatarSlot = avatarPicker.closest('.photo-slot');
+    const cropCurrentAvatarButton = document.querySelector('#profile-avatar-crop-current');
+    const removeAvatarButton = document.querySelector('#profile-avatar-remove');
+    const avatarCropDialog = document.querySelector('#profile-avatar-crop-dialog');
+    const avatarCropViewport = document.querySelector('#profile-avatar-crop-viewport');
+    const avatarCropImage = document.querySelector('#profile-avatar-crop-image');
+    const avatarCropZoom = document.querySelector('#profile-avatar-crop-zoom');
+    const avatarCropMessage = document.querySelector('#profile-avatar-crop-message');
+    const avatarCropApply = document.querySelector('#profile-avatar-crop-apply');
+    const avatarCropCancel = document.querySelector('#profile-avatar-crop-cancel');
     const collection = document.querySelector('#profile-collection');
     const collectionTitle = document.querySelector('#profile-collection-title');
     const collectionNotice = document.querySelector('#collection-notice');
@@ -33,7 +47,16 @@
     let currentUser;
     let isOwner = false;
     let isAdmin = false;
-    let isEditing = false;
+    let croppedAvatarFile = null;
+    let removeAvatar = false;
+    let savedAvatarUrl = '';
+    let stagedAvatarUrl = '';
+    let avatarCropObjectUrl = '';
+    let avatarCropScale = 1;
+    let avatarCropBaseScale = 1;
+    let avatarCropLeft = 0;
+    let avatarCropTop = 0;
+    let avatarCropDrag = null;
     let activeCards = new Map();
     let selectedCardId = null;
     let selectedPhotos = [];
@@ -150,6 +173,215 @@
         })[file.type];
     }
 
+    function updateAvatarActions() {
+        if (stagedAvatarUrl) URL.revokeObjectURL(stagedAvatarUrl);
+        stagedAvatarUrl = croppedAvatarFile ? URL.createObjectURL(croppedAvatarFile) : '';
+        const previewUrl = stagedAvatarUrl || savedAvatarUrl;
+        avatarPreview.replaceChildren();
+        if (previewUrl) {
+            const image = document.createElement('img');
+            image.src = previewUrl;
+            image.alt = '';
+            avatarPreview.append(image);
+        } else {
+            avatarPreview.textContent = 'Choose photo';
+        }
+        avatarAction.textContent = previewUrl ? 'Click to replace' : 'Choose photo';
+        cropCurrentAvatarButton.hidden = !previewUrl || removeAvatar;
+        removeAvatarButton.hidden = !previewUrl;
+        removeAvatarButton.textContent = croppedAvatarFile
+            ? 'Discard new photo'
+            : removeAvatar ? 'Keep photo' : 'Remove photo';
+        removeAvatarButton.setAttribute('aria-pressed', String(removeAvatar));
+        avatarSlot.classList.toggle('is-marked-for-removal', removeAvatar);
+    }
+
+    function positionAvatarCropImage(left, top) {
+        const viewportSize = avatarCropViewport.clientWidth;
+        const imageWidth = avatarCropImage.naturalWidth * avatarCropScale;
+        const imageHeight = avatarCropImage.naturalHeight * avatarCropScale;
+        avatarCropLeft = Math.min(0, Math.max(viewportSize - imageWidth, left));
+        avatarCropTop = Math.min(0, Math.max(viewportSize - imageHeight, top));
+        avatarCropImage.style.width = `${imageWidth}px`;
+        avatarCropImage.style.height = `${imageHeight}px`;
+        avatarCropImage.style.left = `${avatarCropLeft}px`;
+        avatarCropImage.style.top = `${avatarCropTop}px`;
+    }
+
+    function setAvatarCropZoom(value) {
+        const viewportSize = avatarCropViewport.clientWidth;
+        const focusX = (viewportSize / 2 - avatarCropLeft) / avatarCropScale;
+        const focusY = (viewportSize / 2 - avatarCropTop) / avatarCropScale;
+        avatarCropScale = avatarCropBaseScale * Number(value);
+        positionAvatarCropImage(
+            viewportSize / 2 - focusX * avatarCropScale,
+            viewportSize / 2 - focusY * avatarCropScale
+        );
+    }
+
+    async function openAvatarCrop(file) {
+        if (!supportedImageType(file)) {
+            throw new Error('Choose a JPEG, PNG, or WebP image.');
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            throw new Error('Profile photos must be 5 MB or smaller.');
+        }
+
+        avatarCropImage.dataset.type = file.type;
+        avatarCropObjectUrl = URL.createObjectURL(file);
+        avatarCropImage.src = avatarCropObjectUrl;
+        await avatarCropImage.decode();
+        avatarCropDialog.showModal();
+        await new Promise(resolve => window.requestAnimationFrame(resolve));
+        const viewportSize = avatarCropViewport.clientWidth;
+        avatarCropBaseScale = Math.max(
+            viewportSize / avatarCropImage.naturalWidth,
+            viewportSize / avatarCropImage.naturalHeight
+        );
+        avatarCropScale = avatarCropBaseScale;
+        avatarCropZoom.value = '1';
+        positionAvatarCropImage(
+            (viewportSize - avatarCropImage.naturalWidth * avatarCropScale) / 2,
+            (viewportSize - avatarCropImage.naturalHeight * avatarCropScale) / 2
+        );
+        setMessage(avatarCropMessage, '');
+        avatarCropViewport.focus();
+    }
+
+    avatarPicker.addEventListener('click', () => avatarInput.click());
+    avatarInput.addEventListener('change', async () => {
+        const file = avatarInput.files[0];
+        if (!file) return;
+        try {
+            await openAvatarCrop(file);
+        } catch (error) {
+            if (avatarCropDialog.open) avatarCropDialog.close();
+            else if (avatarCropObjectUrl) URL.revokeObjectURL(avatarCropObjectUrl);
+            avatarCropObjectUrl = '';
+            avatarInput.value = '';
+            setMessage(editMessage, `Unable to open that photo for cropping: ${error.message}`, true);
+        }
+    });
+
+    cropCurrentAvatarButton.addEventListener('click', async () => {
+        cropCurrentAvatarButton.disabled = true;
+        setMessage(editMessage, 'Loading photo…');
+        try {
+            let file = croppedAvatarFile;
+            if (!file) {
+                const imageUrl = await avatarUrl(activeProfile.avatar_path);
+                const response = await fetch(imageUrl);
+                if (!response.ok) throw new Error(`Photo download failed (${response.status}).`);
+                const blob = await response.blob();
+                const extension = supportedImageType(blob);
+                if (!extension) throw new Error('The current photo is not a supported image.');
+                file = new File([blob], `profile-avatar.${extension}`, { type: blob.type });
+            }
+            await openAvatarCrop(file);
+            setMessage(editMessage, '');
+        } catch (error) {
+            if (avatarCropDialog.open) avatarCropDialog.close();
+            else if (avatarCropObjectUrl) URL.revokeObjectURL(avatarCropObjectUrl);
+            avatarCropObjectUrl = '';
+            setMessage(editMessage, `Unable to crop the current photo: ${error.message}`, true);
+        } finally {
+            cropCurrentAvatarButton.disabled = false;
+        }
+    });
+
+    avatarCropZoom.addEventListener('input', () => setAvatarCropZoom(avatarCropZoom.value));
+    avatarCropViewport.addEventListener('pointerdown', event => {
+        if (event.button !== 0) return;
+        avatarCropViewport.setPointerCapture(event.pointerId);
+        avatarCropDrag = {
+            x: event.clientX,
+            y: event.clientY,
+            left: avatarCropLeft,
+            top: avatarCropTop
+        };
+    });
+    avatarCropViewport.addEventListener('pointermove', event => {
+        if (!avatarCropDrag) return;
+        positionAvatarCropImage(
+            avatarCropDrag.left + event.clientX - avatarCropDrag.x,
+            avatarCropDrag.top + event.clientY - avatarCropDrag.y
+        );
+    });
+    avatarCropViewport.addEventListener('pointerup', () => {
+        avatarCropDrag = null;
+    });
+    avatarCropViewport.addEventListener('pointercancel', () => {
+        avatarCropDrag = null;
+    });
+    avatarCropViewport.addEventListener('keydown', event => {
+        const movement = event.shiftKey ? 10 : 2;
+        const offsets = {
+            ArrowLeft: [movement, 0],
+            ArrowRight: [-movement, 0],
+            ArrowUp: [0, movement],
+            ArrowDown: [0, -movement]
+        }[event.key];
+        if (!offsets) return;
+        event.preventDefault();
+        positionAvatarCropImage(avatarCropLeft + offsets[0], avatarCropTop + offsets[1]);
+    });
+    avatarCropCancel.addEventListener('click', () => avatarCropDialog.close());
+    avatarCropDialog.addEventListener('close', () => {
+        avatarInput.value = '';
+        avatarCropDrag = null;
+        if (avatarCropObjectUrl) URL.revokeObjectURL(avatarCropObjectUrl);
+        avatarCropObjectUrl = '';
+    });
+    removeAvatarButton.addEventListener('click', () => {
+        if (croppedAvatarFile) {
+            croppedAvatarFile = null;
+            removeAvatar = false;
+        } else {
+            removeAvatar = !removeAvatar;
+        }
+        updateAvatarActions();
+    });
+    avatarCropApply.addEventListener('click', async () => {
+        avatarCropApply.disabled = true;
+        setMessage(avatarCropMessage, 'Preparing your crop…');
+        try {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const context = canvas.getContext('2d');
+            if (!context) throw new Error('Your browser could not prepare the cropped photo.');
+            const sourceSize = avatarCropViewport.clientWidth / avatarCropScale;
+            context.drawImage(
+                avatarCropImage,
+                -avatarCropLeft / avatarCropScale,
+                -avatarCropTop / avatarCropScale,
+                sourceSize,
+                sourceSize,
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+            const blob = await new Promise((resolve, reject) => {
+                canvas.toBlob(result => {
+                    if (result) resolve(result);
+                    else reject(new Error('Your browser could not create the cropped photo.'));
+                }, avatarCropImage.dataset.type, 0.92);
+            });
+            if (blob.size > 5 * 1024 * 1024) throw new Error('The cropped photo must be 5 MB or smaller.');
+            const extension = supportedImageType(blob) || 'jpg';
+            croppedAvatarFile = new File([blob], `profile-avatar.${extension}`, { type: blob.type });
+            removeAvatar = false;
+            updateAvatarActions();
+            setMessage(editMessage, '');
+            avatarCropDialog.close();
+        } catch (error) {
+            setMessage(avatarCropMessage, error.message, true);
+        } finally {
+            avatarCropApply.disabled = false;
+        }
+    });
+
     async function avatarUrl(path) {
         if (!path) return '';
         const { data, error } = await client.storage.from('community-avatars').createSignedUrl(path, 3600);
@@ -159,6 +391,8 @@
 
     async function drawSummary(profile) {
         const imageUrl = await avatarUrl(profile.avatar_path);
+        savedAvatarUrl = imageUrl;
+        updateAvatarActions();
         const avatar = document.querySelector('#profile-avatar');
         avatar.textContent = imageUrl ? '' : initials(profile);
         avatar.replaceChildren();
@@ -185,22 +419,13 @@
         profileForm.elements.display_name.value = profile.display_name;
         profileForm.elements.username.value = profile.username;
         profileForm.elements.bio.value = profile.bio || '';
+        avatarInput.value = '';
+        croppedAvatarFile = null;
+        removeAvatar = false;
+        updateAvatarActions();
     }
 
-    function setEditing(enabled) {
-        isEditing = enabled;
-        editor.hidden = !enabled;
-        editToggle.textContent = enabled ? 'Done' : 'Edit';
-        editToggle.setAttribute('aria-expanded', String(enabled));
-        loadCards(activeProfile, true).catch(error => {
-            setMessage(collectionNotice, `Unable to refresh this collection: ${error.message}`, true);
-        });
-    }
-
-    function buildCardMarkup(card, imageUrl, canDelete) {
-        const deleteButton = canDelete
-            ? `<button type="button" class="community-card-delete" data-delete-card="${window.escapeStoreHTML(card.id)}" aria-label="Remove ${window.escapeStoreHTML(card.name)}">Remove</button>`
-            : '';
+    function buildCardMarkup(card, imageUrl) {
         return `<article class="product community-card" data-grade="${window.escapeStoreHTML(card.grade)}">
             <button type="button" class="community-card-open" data-open-card="${window.escapeStoreHTML(card.id)}" aria-label="View ${window.escapeStoreHTML(card.name)}">
                 <span class="community-card-image">
@@ -212,7 +437,6 @@
                 </span>
                 <span class="community-card-title">${window.escapeStoreHTML(card.name)}</span>
             </button>
-            ${deleteButton}
         </article>`;
     }
 
@@ -227,7 +451,7 @@
         selectedPhotos = entry.photos;
         selectedPhotoIndex = Math.min(selectedPhotoIndex, selectedPhotos.length - 1);
         detailGrade.textContent = card.detail ? `${card.grade} · ${card.detail}` : card.grade;
-        detailTitle.textContent = card.title || entry.storeTitle || card.name;
+        detailTitle.textContent = card.name;
         detailEditToggle.hidden = !(isOwner || isAdmin);
         detailImage.src = selectedPhotos[selectedPhotoIndex].src;
         detailImage.alt = selectedPhotos[selectedPhotoIndex].alt || `${card.detail || card.name} card`;
@@ -256,7 +480,7 @@
         if (!cardDialog.open) cardDialog.showModal();
     }
 
-    async function loadCards(profile, canManage) {
+    async function loadCards(profile) {
         collection.hidden = false;
         collectionTitle.textContent = 'Card Collection';
         if (isAdmin && !isOwner) {
@@ -317,7 +541,7 @@
                 ? storeCard.photos.some(photo => photo.rotationEnabled === true)
                 : card.source_store_card_id === 'marlon');
             activeCards.set(card.id, { card, photos, storeTitle: storeCard?.title, storePhotoCount: storeCard?.photoCount, storeRotation });
-            return buildCardMarkup(card, photos[0].src, canManage && isEditing);
+            return buildCardMarkup(card, photos[0].src);
         }));
         cardGrid.innerHTML = cards.join('');
         const grades = [...new Set(orderedCards.map(card => card.grade))]
@@ -345,21 +569,40 @@
 
     editToggle.addEventListener('click', () => {
         setMessage(notice, '');
-        setEditing(!isEditing);
+        populateEditor(activeProfile);
+        setMessage(editMessage, '');
+        editor.showModal();
+        editToggle.setAttribute('aria-expanded', 'true');
+        profileForm.elements.display_name.focus();
     });
     addCardToggle.addEventListener('click', () => {
-        const opening = cardEditor.hidden;
-        cardEditor.hidden = !opening;
-        addCardToggle.textContent = opening ? 'Cancel add' : 'Add card';
-        addCardToggle.setAttribute('aria-expanded', String(opening));
-        if (opening) cardForm.elements.name.focus();
-        else {
-            cardForm.reset();
-            resetPhotoSlots(cardForm);
-            setMessage(cardMessage, '');
-        }
+        cardEditor.showModal();
+        addCardToggle.setAttribute('aria-expanded', 'true');
+        cardForm.elements.name.focus();
     });
-    document.querySelector('#community-card-add-cancel').addEventListener('click', () => addCardToggle.click());
+    document.querySelector('#profile-editor-close').addEventListener('click', () => {
+        if (!profileForm.querySelector('[type="submit"]').disabled) editor.close();
+    });
+    editor.addEventListener('cancel', event => {
+        if (profileForm.querySelector('[type="submit"]').disabled) event.preventDefault();
+    });
+    editor.addEventListener('close', () => {
+        editToggle.setAttribute('aria-expanded', 'false');
+    });
+    function closeCardEditor() {
+        if (!cardForm.querySelector('[type="submit"]').disabled) cardEditor.close();
+    }
+    document.querySelector('#collection-editor-close').addEventListener('click', closeCardEditor);
+    document.querySelector('#community-card-add-cancel').addEventListener('click', closeCardEditor);
+    cardEditor.addEventListener('cancel', event => {
+        if (cardForm.querySelector('[type="submit"]').disabled) event.preventDefault();
+    });
+    cardEditor.addEventListener('close', () => {
+        addCardToggle.setAttribute('aria-expanded', 'false');
+        cardForm.reset();
+        resetPhotoSlots(cardForm);
+        setMessage(cardMessage, '');
+    });
 
     document.querySelector('#community-card-detail-close').addEventListener('click', () => cardDialog.close());
     cardDialog.addEventListener('close', () => {
@@ -393,7 +636,6 @@
         cardEditForm.elements.name.value = entry.card.name;
         cardEditForm.elements.detail.value = entry.card.detail || '';
         cardEditForm.elements.grade.value = entry.card.grade;
-        cardEditForm.elements.title.value = entry.card.title || entry.storeTitle || entry.card.name;
         cardEditForm.elements.rotation_enabled.checked = entry.card.rotation_enabled ?? Boolean(entry.storeRotation);
         const storePhotos = isStorePhotoSource(entry);
         resetPhotoSlots(cardEditForm, entry);
@@ -476,9 +718,9 @@
                 name: cardEditForm.elements.name.value.trim(),
                 detail: cardEditForm.elements.detail.value.trim(),
                 grade: cardEditForm.elements.grade.value,
-                title: cardEditForm.elements.title.value.trim(),
                 rotation_enabled: cardEditForm.elements.rotation_enabled.checked
             };
+            if (updates.name !== entry.card.name) updates.title = updates.name;
             if (photoPaths.front || removedSides.has('front')) updates.photo_path = photoPaths.front || null;
             if (photoPaths.back || removedSides.has('back')) updates.back_photo_path = photoPaths.back || null;
             const { error } = await client.from('community_cards')
@@ -522,7 +764,7 @@
                 }
             }
             try {
-                await loadCards(activeProfile, isOwner || isAdmin);
+                await loadCards(activeProfile);
             } catch (error) {
                 throw new Error(`Card updated, but the collection could not refresh: ${error.message}`);
             }
@@ -572,7 +814,7 @@
         let profileSaved = false;
 
         try {
-            const image = profileForm.elements.avatar.files[0];
+            const image = croppedAvatarFile;
             if (image) {
                 const extension = supportedImageType(image);
                 if (!extension) throw new Error('Choose a JPEG, PNG, or WebP image.');
@@ -590,7 +832,8 @@
                 display_name: profileForm.elements.display_name.value.trim(),
                 bio: profileForm.elements.bio.value.trim()
             };
-            if (uploadedAvatarPath) updates.avatar_path = uploadedAvatarPath;
+            const avatarChanged = Boolean(uploadedAvatarPath) || removeAvatar;
+            if (avatarChanged) updates.avatar_path = uploadedAvatarPath || null;
             if (!/^[a-z0-9_]{3,24}$/.test(updates.username)) {
                 throw new Error('Use 3–24 letters, numbers, or underscores for your username.');
             }
@@ -605,17 +848,20 @@
             const previousAvatarPath = activeProfile.avatar_path;
             profileSaved = true;
             activeProfile = data;
+            croppedAvatarFile = null;
+            removeAvatar = false;
+            avatarInput.value = '';
+            updateAvatarActions();
             await drawSummary(activeProfile);
-            if (uploadedAvatarPath && previousAvatarPath) {
+            if (avatarChanged && previousAvatarPath) {
                 const { error: removeError } = await client.storage.from('community-avatars').remove([previousAvatarPath]);
                 if (removeError) throw new Error(`Profile saved, but the previous photo could not be removed: ${removeError.message}`);
             }
             const profileUrl = new URL(window.location.href);
             profileUrl.searchParams.set('user', activeProfile.username);
             window.history.replaceState({}, '', profileUrl);
-            profileForm.elements.avatar.value = '';
             setMessage(editMessage, '');
-            setEditing(false);
+            editor.close();
             setMessage(notice, 'Profile saved.');
             editToggle.focus();
         } catch (error) {
@@ -666,7 +912,7 @@
                 name: cardForm.elements.name.value.trim(),
                 detail: cardForm.elements.detail.value.trim(),
                 grade: cardForm.elements.grade.value,
-                title: cardForm.elements.title.value.trim(),
+                title: cardForm.elements.name.value.trim(),
                 rotation_enabled: cardForm.elements.rotation_enabled.checked,
                 photo_path: photoPaths.front || null,
                 back_photo_path: photoPaths.back || null
@@ -675,14 +921,14 @@
             uploadedPhotoPaths.length = 0;
             cardForm.reset();
             resetPhotoSlots(cardForm);
-            cardEditor.hidden = true;
-            addCardToggle.textContent = 'Add card';
-            addCardToggle.setAttribute('aria-expanded', 'false');
             try {
-                await loadCards(activeProfile, true);
+                await loadCards(activeProfile);
             } catch (error) {
-                throw new Error(`Card added, but the collection could not refresh: ${error.message}`);
+                cardEditor.close();
+                setMessage(collectionNotice, `Card added, but the collection could not refresh: ${error.message}`, true);
+                return;
             }
+            cardEditor.close();
             setMessage(
                 collectionNotice,
                 isOwner ? 'Card added to your collection.' : `Card added to @${activeProfile.username}’s collection.`
@@ -703,10 +949,16 @@
 
     async function deleteCard(cardId, button) {
         const collectionOwner = isOwner ? 'your collection' : `@${activeProfile.username}’s collection`;
-        if (!window.confirm(`Remove this card from ${collectionOwner}?`)) return;
         button.disabled = true;
-        setMessage(collectionNotice, 'Removing card…');
         try {
+            const cardName = activeCards.get(cardId)?.card.name || 'this card';
+            const confirmed = await window.confirmStoreAction({
+                title: 'Delete card?',
+                message: `Are you sure you want to delete ${cardName} from ${collectionOwner}? This cannot be undone.`,
+                confirmLabel: 'Delete'
+            });
+            if (!confirmed) return;
+            setMessage(cardEditMessage, 'Removing card…');
             const card = (await client.from('community_cards')
                 .select('id, photo_path, back_photo_path')
                 .eq('id', cardId)
@@ -727,13 +979,13 @@
             if (photoPaths.length) {
                 ({ error: photoError } = await client.storage.from('community-card-photos').remove(photoPaths));
             }
-            await loadCards(activeProfile, true);
+            await loadCards(activeProfile);
             if (photoError) {
                 setMessage(collectionNotice, `Card removed, but its photo could not be deleted: ${photoError.message}`, true);
             }
-            button.disabled = false;
         } catch (error) {
-            setMessage(collectionNotice, `Unable to remove card: ${error.message}`, true);
+            setMessage(cardDialog.open ? cardEditMessage : collectionNotice, `Unable to remove card: ${error.message}`, true);
+        } finally {
             button.disabled = false;
         }
     }
@@ -748,8 +1000,6 @@
             openCardDetails(openButton.dataset.openCard);
             return;
         }
-        const button = event.target.closest('[data-delete-card]');
-        if (button) deleteCard(button.dataset.deleteCard, button);
     });
 
     try {
@@ -799,7 +1049,7 @@
                 document.querySelector('#profile-editor h2').textContent = 'Edit collector profile';
             }
         }
-        await loadCards(activeProfile, canManage);
+        await loadCards(activeProfile);
     } catch (error) {
         const message = /object not found/i.test(error.message)
             ? 'Collection photos are not public yet. Run the latest supabase-community-setup.sql in the Supabase SQL Editor, then reload this profile.'

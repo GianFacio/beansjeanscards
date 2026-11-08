@@ -1,10 +1,9 @@
-// Authenticate the store admin, then save new cards through the protected Supabase API.
-const loginSection = document.querySelector('#admin-login');
+// Verify the signed-in account before exposing card management tools.
+const accessRequired = document.querySelector('#admin-access-required');
 const dashboard = document.querySelector('#admin-dashboard');
-const loginForm = document.querySelector('#login-form');
 const cardForm = document.querySelector('#card-form');
+const signOutButton = document.querySelector('#admin-sign-out');
 const message = document.querySelector('#admin-message');
-const passwordInput = document.querySelector('#login-password');
 const returnTo = getSafeReturnTarget();
 let supabaseClient;
 
@@ -18,15 +17,6 @@ function getSafeReturnTarget() {
 
 document.querySelector('#cancel-add-card').href = returnTo;
 
-document.querySelector('#toggle-password-visibility').addEventListener('click', event => {
-    const button = event.currentTarget;
-    const isVisible = passwordInput.type === 'text';
-    passwordInput.type = isVisible ? 'password' : 'text';
-    button.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
-    button.title = isVisible ? 'Show password' : 'Hide password';
-    button.setAttribute('aria-pressed', String(!isVisible));
-});
-
 window.setupCardPhotoSlotInputs(document.querySelector('#card-form'));
 
 function showMessage(text, isError = false) {
@@ -38,30 +28,37 @@ async function verifyStoreAdmin(user) {
     const { data, error } = await supabaseClient.rpc('is_store_admin');
     if (error) throw error;
     if (!data) {
-        await supabaseClient.auth.signOut();
         window.setStoreAdminAccess(false);
-        throw new Error('This account is signed in but is not on the store admin allowlist.');
+        accessRequired.hidden = false;
+        showMessage('This account is signed in but does not have admin access.', true);
+        return;
     }
 
-    loginSection.hidden = true;
+    accessRequired.hidden = true;
     dashboard.hidden = false;
     window.setStoreAdminAccess(true);
     if (user?.email) dashboard.querySelector('h1').title = `Signed in as ${user.email}`;
 }
 
-loginForm.addEventListener('submit', async event => {
-    event.preventDefault();
-    showMessage('Signing in…');
+signOutButton.addEventListener('click', async () => {
+    signOutButton.disabled = true;
     try {
-        supabaseClient = window.getStoreSupabaseClient();
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email: window.getStoreAdminEmail(document.querySelector('#login-username').value),
-            password: passwordInput.value
+        const confirmed = await window.confirmStoreAction({
+            title: 'Sign out?',
+            message: 'Are you sure you want to sign out?',
+            confirmLabel: 'Sign out'
         });
+        if (!confirmed) return;
+        const { error } = await window.getStoreSupabaseClient().auth.signOut();
         if (error) throw error;
-        await verifyStoreAdmin(data.user);
+        window.setStoreAdminAccess(false);
+        dashboard.hidden = true;
+        accessRequired.hidden = false;
+        showMessage('Signed out.');
     } catch (error) {
-        showMessage(`Unable to sign in: ${error.message}`, true);
+        showMessage(`Unable to sign out: ${error.message}`, true);
+    } finally {
+        signOutButton.disabled = false;
     }
 });
 
@@ -121,8 +118,14 @@ cardForm.addEventListener('submit', async event => {
         supabaseClient = window.getStoreSupabaseClient();
         const { data, error } = await supabaseClient.auth.getSession();
         if (error) throw error;
-        if (data.session) await verifyStoreAdmin(data.session.user);
+        if (data.session) {
+            await verifyStoreAdmin(data.session.user);
+        } else {
+            accessRequired.hidden = false;
+            showMessage('');
+        }
     } catch (error) {
+        accessRequired.hidden = false;
         showMessage(error.message, true);
     }
 })();

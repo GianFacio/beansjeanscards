@@ -18,6 +18,41 @@ window.escapeStoreHTML = function (value) {
     })[character]);
 };
 
+window.confirmStoreAction = function ({ title, message, confirmLabel }) {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'store-modal store-destructive-dialog';
+    dialog.setAttribute('aria-labelledby', 'store-confirm-title');
+    dialog.setAttribute('aria-describedby', 'store-confirm-message');
+    dialog.innerHTML = `
+        <div class="store-modal-content">
+            <div class="store-modal-header">
+                <h2 id="store-confirm-title"></h2>
+            </div>
+            <p id="store-confirm-message"></p>
+            <form method="dialog" class="store-modal-actions">
+                <button type="submit" class="store-modal-button store-modal-cancel" value="cancel" autofocus>Cancel</button>
+                <button type="submit" class="store-modal-button store-modal-confirm" value="confirm"></button>
+            </form>
+        </div>`;
+    dialog.querySelector('#store-confirm-title').textContent = title;
+    dialog.querySelector('#store-confirm-message').textContent = message;
+    dialog.querySelector('.store-modal-confirm').textContent = confirmLabel;
+    document.body.append(dialog);
+    return new Promise((resolve, reject) => {
+        dialog.addEventListener('close', () => {
+            const confirmed = dialog.returnValue === 'confirm';
+            dialog.remove();
+            resolve(confirmed);
+        }, { once: true });
+        try {
+            dialog.showModal();
+        } catch (error) {
+            dialog.remove();
+            reject(error);
+        }
+    });
+};
+
 // Create the browser client from the project's public URL and public anon/publishable key.
 window.getStoreSupabaseClient = function () {
     const url = window.CARD_STORE_SUPABASE_URL;

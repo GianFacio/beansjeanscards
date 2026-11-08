@@ -182,6 +182,12 @@ communitySignUpForm.addEventListener('submit', async event => {
 communitySignOut.addEventListener('click', async () => {
     communitySignOut.disabled = true;
     try {
+        const confirmed = await window.confirmStoreAction({
+            title: 'Sign out?',
+            message: 'Are you sure you want to sign out?',
+            confirmLabel: 'Sign out'
+        });
+        if (!confirmed) return;
         const { error } = await communityClient.auth.signOut();
         if (error) throw error;
     } catch (error) {

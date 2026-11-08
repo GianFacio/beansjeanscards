@@ -22,11 +22,6 @@
                     <i class="bi bi-circle-half header-icon" aria-hidden="true"></i>
                 </button>
                 <a class="community-header-link" href="community.html">Collectors</a>
-                <button type="button" id="admin-access-toggle" class="btn-outline theme-secondary btn-icon theme-toggle" aria-label="Admin sign in" title="Admin sign in">
-                    <svg class="header-icon header-lock-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M8 0a4 4 0 0 1 4 4v2.05a2.5 2.5 0 0 1 2 2.45v5a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 2 13.5v-5a2.5 2.5 0 0 1 2-2.45V4a4 4 0 0 1 4-4M4.5 7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7zM8 1a3 3 0 0 0-3 3v2h6V4a3 3 0 0 0-3-3"/>
-                    </svg>
-                </button>
                 <button type="button" id="add-card-toggle" class="btn-outline theme-secondary btn-icon theme-toggle" aria-label="Add a card" title="Add a card" hidden>
                     <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
                         <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
@@ -138,19 +133,6 @@
     <dialog id="photo-zoom-dialog" class="photo-zoom-dialog" aria-label="Zoomed card photo">
         <button id="close-photo-zoom" class="photo-zoom-close" type="button" aria-label="Close zoomed photo">&times;</button>
         <img id="photo-zoom-image" alt="">
-    </dialog>
-    <!-- Match the sign-out confirmation before performing an irreversible card deletion. -->
-    <dialog id="delete-card-dialog" class="store-modal store-destructive-dialog" aria-labelledby="delete-card-title" aria-describedby="delete-card-message">
-        <div class="store-modal-content">
-            <div class="store-modal-header">
-                <h2 id="delete-card-title">Delete card?</h2>
-            </div>
-            <p id="delete-card-message"></p>
-            <form method="dialog" class="store-modal-actions">
-                <button type="submit" class="store-modal-button store-modal-cancel" value="cancel">Cancel</button>
-                <button type="submit" class="store-modal-button store-modal-confirm" value="delete">Delete</button>
-            </form>
-        </div>
     </dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
@@ -532,31 +514,33 @@
                 }
             });
 
-            const deleteCardDialog = document.querySelector('#delete-card-dialog');
-            const deleteCardDialogMessage = document.querySelector('#delete-card-message');
-            deleteCardDialogMessage.textContent = `Are you sure you want to delete ${card.detail}? This cannot be undone.`;
-            // Delete only after the user confirms in the shared-style modal.
-            document.querySelector('#delete-card').addEventListener('click', async () => {
-                deleteCardDialog.showModal();
-                const confirmed = await new Promise(resolve => {
-                    deleteCardDialog.addEventListener('close', () => resolve(deleteCardDialog.returnValue === 'delete'), { once: true });
-                });
-                if (!confirmed) return;
-                showEditMessage('Deleting card…');
-                const { error } = await window.getStoreSupabaseClient()
-                    .from('cards').delete().eq('id', card.id);
-                if (error) {
-                    showEditMessage(`Unable to delete card: ${error.message}`, true);
-                    return;
-                }
-
+            document.querySelector('#delete-card').addEventListener('click', async event => {
+                const button = event.currentTarget;
+                button.disabled = true;
                 try {
-                    await window.removeManagedCardPhotos(card.photos);
-                } catch (cleanupError) {
-                    showEditMessage(`Card deleted, but photo cleanup failed: ${cleanupError.message}`, true);
-                    return;
+                    const confirmed = await window.confirmStoreAction({
+                        title: 'Delete card?',
+                        message: `Are you sure you want to delete ${card.detail}? This cannot be undone.`,
+                        confirmLabel: 'Delete'
+                    });
+                    if (!confirmed) return;
+                    showEditMessage('Deleting card…');
+                    const { error } = await window.getStoreSupabaseClient()
+                        .from('cards').delete().eq('id', card.id);
+                    if (error) throw error;
+
+                    try {
+                        await window.removeManagedCardPhotos(card.photos);
+                    } catch (cleanupError) {
+                        showEditMessage(`Card deleted, but photo cleanup failed: ${cleanupError.message}`, true);
+                        return;
+                    }
+                    window.location.assign('collection.html');
+                } catch (error) {
+                    showEditMessage(`Unable to delete card: ${error.message}`, true);
+                } finally {
+                    button.disabled = false;
                 }
-                window.location.assign('collection.html');
             });
             }
         })().catch(error => window.showStoreError(document.querySelector('#collection-browser'), error));

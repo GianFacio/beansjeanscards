@@ -33,7 +33,7 @@
                 <span class="community-profile-card-copy">
                     <strong>${window.escapeStoreHTML(profile.display_name)}</strong>
                     <span class="community-username">@${window.escapeStoreHTML(profile.username)}</span>
-                    <span class="community-profile-bio">${window.escapeStoreHTML(profile.bio || 'Card collector')}</span>
+                    <span class="community-profile-tag">Card collector</span>
                 </span>
                 <span class="community-profile-open" aria-hidden="true">&rarr;</span>
             </a>`;

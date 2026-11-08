@@ -48,7 +48,7 @@
         </section>
 
         <dialog id="profile-editor" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="profile-editor-title">
-            <button id="profile-editor-close" class="photo-zoom-close" type="button" aria-label="Close profile editor">&times;</button>
+            <button id="profile-editor-close" class="photo-zoom-close" type="button" aria-label="Close profile editor" autofocus>&times;</button>
             <h2 id="profile-editor-title">Edit your profile</h2>
             <form id="profile-edit-form" class="community-form">
                 <label>Display name
@@ -68,8 +68,10 @@
                             <span id="profile-avatar-action" class="photo-slot-action">Choose photo</span>
                         </button>
                         <input id="profile-avatar-input" name="avatar" class="visually-hidden-file" type="file" accept="image/jpeg,image/png,image/webp" tabindex="-1">
-                        <button id="profile-avatar-crop-current" class="photo-remove-control" type="button" hidden>Crop photo</button>
-                        <button id="profile-avatar-remove" class="photo-remove-control" type="button" hidden>Remove photo</button>
+                        <div class="profile-photo-actions">
+                            <button id="profile-avatar-crop-current" class="photo-remove-control" type="button" hidden>Crop photo</button>
+                            <button id="profile-avatar-remove" class="photo-remove-control" type="button" hidden>Remove photo</button>
+                        </div>
                     </div>
                     <small class="photo-help-text">Click the photo to replace it. JPEG, PNG, or WebP, up to 5 MB.</small>
                 </fieldset>
@@ -80,7 +82,7 @@
         </dialog>
 
         <dialog id="collection-editor" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="collection-editor-title">
-            <button id="collection-editor-close" class="photo-zoom-close" type="button" aria-label="Close add card">&times;</button>
+            <button id="collection-editor-close" class="photo-zoom-close" type="button" aria-label="Close add card" autofocus>&times;</button>
             <h2 id="collection-editor-title">Add a card</h2>
             <p>New cards are added to your collection immediately.</p>
             <form id="community-card-form" class="community-form">

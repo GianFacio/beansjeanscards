@@ -586,13 +586,11 @@
         setMessage(editMessage, '');
         editor.showModal();
         editToggle.setAttribute('aria-expanded', 'true');
-        window.focusStoreTextInput(profileForm.elements.display_name);
     });
     addCardToggle.addEventListener('click', () => {
         cardEditor.showModal();
         addCardToggle.setAttribute('aria-expanded', 'true');
         resizeCardName(cardForm.elements.name);
-        window.focusStoreTextInput(cardForm.elements.name);
     });
     document.querySelector('#profile-editor-close').addEventListener('click', () => {
         if (!profileForm.querySelector('[type="submit"]').disabled) editor.close();
@@ -662,7 +660,6 @@
         setMessage(cardEditMessage, '');
         cardEditPanel.hidden = false;
         resizeCardName(cardEditForm.elements.name);
-        window.focusStoreTextInput(cardEditForm.elements.name);
     });
     document.querySelector('#community-card-edit-cancel').addEventListener('click', () => {
         cardEditForm.reset();

@@ -18,10 +18,6 @@ window.escapeStoreHTML = function (value) {
     })[character]);
 };
 
-window.focusStoreTextInput = function (input) {
-    if (!window.matchMedia('(pointer: coarse)').matches) input.focus();
-};
-
 window.confirmStoreAction = function ({ title, message, confirmLabel }) {
     const dialog = document.createElement('dialog');
     dialog.className = 'store-modal store-destructive-dialog';

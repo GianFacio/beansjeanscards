@@ -156,6 +156,9 @@ create table if not exists public.community_cards (
     grade text not null check (grade = 'Raw' or grade ~ '^PSA (10|[1-9])$'),
     title text check (title is null or char_length(trim(title)) between 1 and 120),
     rotation_enabled boolean,
+    player text check (player is null or char_length(player) <= 80),
+    card_set text check (card_set is null or char_length(card_set) <= 34),
+    card_year text check (card_year is null or char_length(card_year) <= 9),
     photo_path text,
     back_photo_path text,
     source_store_card_id text references public.cards (id) on delete cascade,
@@ -182,6 +185,12 @@ alter table public.community_cards
     add column if not exists title text check (title is null or char_length(trim(title)) between 1 and 120);
 alter table public.community_cards
     add column if not exists rotation_enabled boolean;
+alter table public.community_cards
+    add column if not exists player text check (player is null or char_length(player) <= 80);
+alter table public.community_cards
+    add column if not exists card_set text check (card_set is null or char_length(card_set) <= 34);
+alter table public.community_cards
+    add column if not exists card_year text check (card_year is null or char_length(card_year) <= 9);
 alter table public.community_cards
     alter column photo_path drop not null;
 alter table public.community_cards
@@ -211,9 +220,9 @@ revoke all on table public.community_cards from public, anon, authenticated;
 grant select on table public.community_cards to anon, authenticated;
 grant delete on table public.community_cards to authenticated;
 revoke insert, update on table public.community_cards from authenticated;
-grant insert (owner_id, name, detail, grade, title, rotation_enabled, photo_path, back_photo_path)
+grant insert (owner_id, name, detail, grade, title, rotation_enabled, player, card_set, card_year, photo_path, back_photo_path)
     on table public.community_cards to authenticated;
-grant update (name, detail, grade, title, rotation_enabled, photo_path, back_photo_path)
+grant update (name, detail, grade, title, rotation_enabled, player, card_set, card_year, photo_path, back_photo_path)
     on table public.community_cards to authenticated;
 
 drop policy if exists "Members can view their own or public collections" on public.community_cards;

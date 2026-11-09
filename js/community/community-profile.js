@@ -164,6 +164,23 @@
         target.classList.toggle('store-error', isError);
     }
 
+    // The combined "Player · Set · Year" text stays in detail for display; the parts are stored separately for editing.
+    function readCardDetails(form) {
+        const player = form.elements.player.value.trim();
+        const cardSet = form.elements.card_set.value.trim();
+        const cardYear = form.elements.card_year.value.trim();
+        const detail = [player, cardSet, cardYear].filter(Boolean).join(' · ');
+        if (detail.length > 80) throw new Error('Player, set, and year are too long together. Shorten them and try again.');
+        return { player: player || null, card_set: cardSet || null, card_year: cardYear || null, detail };
+    }
+
+    function fillCardDetails(form, card) {
+        const hasParts = card.player || card.card_set || card.card_year;
+        form.elements.player.value = hasParts ? card.player || '' : card.detail || '';
+        form.elements.card_set.value = card.card_set || '';
+        form.elements.card_year.value = card.card_year || '';
+    }
+
     function startProfileNotifications(ownerId) {
         function reportFailure(error) {
             console.error('Unable to start profile notifications:', error);
@@ -188,8 +205,8 @@
         }
 
         const retry = document.createElement('script');
-        const original = document.querySelector(        'script[src^="js/community/profile-notifications.js"]');
-                const url = new URL(original?.getAttribute('src') || 'js/community/profile-notifications.js', document.baseURI);
+        const original = document.querySelector('script[src^="js/community/profile-notifications.js"]');
+        const url = new URL(original?.getAttribute('src') || 'js/community/profile-notifications.js', document.baseURI);
         url.searchParams.set('retry', Date.now());
         retry.src = url.href;
         retry.onload = () => {
@@ -201,7 +218,7 @@
 
     function cardSaveError(error) {
         if (error.code === 'PGRST204' || error.code === '42703') {
-            return 'Community card fields are outdated. Run sql/supabase-community-card-fields.sql in the Supabase SQL Editor, then try again.';
+            return 'Community card fields are outdated. Run sql/supabase-community-card-fields.sql and sql/supabase-community-card-details.sql in the Supabase SQL Editor, then try again.';
         }
         if (/permission denied for table community_cards/i.test(error.message)) {
             return 'Community card permissions are outdated. Run the latest sql/supabase-community-setup.sql in the Supabase SQL Editor, then try again.';
@@ -530,6 +547,7 @@
             .eq('owner_id', profile.id)
             .order('created_at', { ascending: false });
         if (error) throw error;
+        window.profileFollows.setCardCount((data || []).length);
 
         const storeSourceIds = (data || [])
             .map(card => card.source_store_card_id)
@@ -687,7 +705,7 @@
         const entry = activeCards.get(selectedCardId);
         if (!entry || !(isOwner || isAdmin)) return;
         cardEditForm.elements.name.value = entry.card.name;
-        cardEditForm.elements.detail.value = entry.card.detail || '';
+        fillCardDetails(cardEditForm, entry.card);
         cardEditForm.elements.grade.value = entry.card.grade;
         cardEditForm.elements.rotation_enabled.checked = entry.card.rotation_enabled ?? Boolean(entry.storeRotation);
         const storePhotos = isStorePhotoSource(entry);
@@ -723,6 +741,7 @@
         let storePhotosSaved = false;
 
         try {
+            const cardDetails = readCardDetails(cardEditForm);
             const photoPaths = {};
             const storePhotoSource = isStorePhotoSource(entry);
             const storeSlots = storePhotoSource ? window.getCardPhotoSlots(entry.photos) : [];
@@ -748,7 +767,7 @@
                 if (!image || removedSides.has(side)) continue;
                 if (storePhotoSource) {
                     const label = side === 'front' ? 'Front' : 'Back';
-                    const photo = await window.uploadCardPhoto(entry.card.source_store_card_id, image, label, cardEditForm.elements.detail.value.trim());
+                    const photo = await window.uploadCardPhoto(entry.card.source_store_card_id, image, label, cardDetails.detail);
                     photo.rotationEnabled = Boolean(entry.storeRotation);
                     uploadedStorePhotos.push(photo);
                     storeReplacements[side] = photo;
@@ -769,7 +788,7 @@
 
             const updates = {
                 name: cardEditForm.elements.name.value.trim(),
-                detail: cardEditForm.elements.detail.value.trim(),
+                ...cardDetails,
                 grade: cardEditForm.elements.grade.value,
                 rotation_enabled: cardEditForm.elements.rotation_enabled.checked
             };
@@ -945,6 +964,7 @@
         const uploadedPhotoPaths = [];
 
         try {
+            const cardDetails = readCardDetails(cardForm);
             const photoFiles = {
                 front_photo: cardForm.elements.front_photo.files[0],
                 back_photo: cardForm.elements.back_photo.files[0]
@@ -972,7 +992,7 @@
             const { error } = await client.from('community_cards').insert({
                 owner_id: activeProfile.id,
                 name: cardForm.elements.name.value.trim(),
-                detail: cardForm.elements.detail.value.trim(),
+                ...cardDetails,
                 grade: cardForm.elements.grade.value,
                 title: cardForm.elements.name.value.trim(),
                 rotation_enabled: cardForm.elements.rotation_enabled.checked,
@@ -1137,6 +1157,7 @@
             }
         }
         if (isOwner) startProfileNotifications(currentUser.id);
+        window.profileFollows.start(activeProfile, session, isOwner);
         await loadCards(activeProfile);
         if (favoritesError) setMessage(collectionNotice, `Unable to load favorites: ${favoritesError}`, true);
         const requestedCard = new URLSearchParams(window.location.search).get('card');

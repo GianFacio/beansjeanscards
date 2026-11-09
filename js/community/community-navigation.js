@@ -7,7 +7,7 @@
         siteBrand.href = session?.user
             ? `profile.html?user=${encodeURIComponent(session.user.id)}`
             : 'index.html';
-        document.querySelectorAll('[data-favorites-nav]').forEach(link => {
+        document.querySelectorAll('[data-favorites-nav], [data-following-nav]').forEach(link => {
             link.hidden = !session?.user;
         });
         document.querySelectorAll('[data-signin-nav]').forEach(link => {

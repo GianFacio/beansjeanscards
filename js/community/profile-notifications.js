@@ -25,15 +25,31 @@
         return error.message || String(error);
     }
 
+    function isMissingFollows(error) {
+        return error.code === 'PGRST205' || error.code === '42P01';
+    }
+
+    async function unreadFollowCount() {
+        const { count, error } = await client.from('community_follows')
+            .select('follower_id', { count: 'exact', head: true })
+            .eq('followed_id', userId).eq('is_read', false);
+        if (error) {
+            if (isMissingFollows(error)) return 0;
+            throw error;
+        }
+        return count;
+    }
+
     async function refreshBadge() {
         if (!userId) return;
         const request = ++badgeRequest;
         try {
-            const { count, error } = await client.from('community_favorite_notifications')
+            const { count: favoriteCount, error } = await client.from('community_favorite_notifications')
                 .select('id', { count: 'exact', head: true })
                 .eq('recipient_id', userId).eq('is_read', false);
-            if (request !== badgeRequest || !userId) return;
             if (error) throw error;
+            const count = favoriteCount + await unreadFollowCount();
+            if (request !== badgeRequest || !userId) return;
             badge.hidden = count === 0;
             button.setAttribute('aria-label', count ? 'Notifications, new alerts' : 'Notifications');
             status.hidden = true;
@@ -63,6 +79,24 @@
         }
     }
 
+    async function loadFollowNotifications() {
+        const follows = [];
+        for (let offset = 0; ; offset += pageSize) {
+            const { data, error } = await client.from('community_follows')
+                .select('follower_id, created_at, is_read, follower:community_profiles!follower_id(username, display_name, avatar_path)')
+                .eq('followed_id', userId)
+                .order('created_at', { ascending: false })
+                .order('follower_id', { ascending: false })
+                .range(offset, offset + pageSize - 1);
+            if (error) {
+                if (isMissingFollows(error)) return [];
+                throw error;
+            }
+            follows.push(...data);
+            if (data.length < pageSize) return follows.map(item => ({ ...item, kind: 'follow' }));
+        }
+    }
+
     async function loadStorePhotos(notifications) {
         const ids = [...new Set(notifications.map(item => item.card)
             .filter(card => card && !card.photo_path && !card.back_photo_path && card.source_store_card_id)
@@ -77,9 +111,26 @@
         return photos;
     }
 
-    function renderNotifications(notifications, storePhotos) {
+    async function renderNotifications(notifications, storePhotos) {
         list.replaceChildren();
         for (const notification of notifications) {
+            if (notification.kind === 'follow') {
+                if (!notification.follower?.username) {
+                    throw new Error('A notification could not be displayed because its collector is unavailable.');
+                }
+                const item = document.createElement('li');
+                item.className = 'follow-notification';
+                const link = document.createElement('a');
+                link.href = `profile.html?user=${encodeURIComponent(notification.follower.username)}`;
+                link.className = 'community-profile-link';
+                link.innerHTML = await window.communityFollows.avatarMarkup(notification.follower);
+                const text = document.createElement('span');
+                text.textContent = `@${notification.follower.username} started following you`;
+                link.append(text);
+                item.append(link);
+                list.append(item);
+                continue;
+            }
             if (!notification.actor?.username || !notification.card?.name) {
                 throw new Error('A notification could not be displayed because its collector or card is unavailable.');
             }
@@ -108,16 +159,25 @@
         list.replaceChildren();
         showMessage('Loading notifications...');
         try {
-            const notifications = await loadNotifications();
+            const [favorites, follows] = await Promise.all([loadNotifications(), loadFollowNotifications()]);
+            const notifications = [...favorites, ...follows]
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             if (!userId || request !== dialogRequest) return;
-            const storePhotos = await loadStorePhotos(notifications);
+            const storePhotos = await loadStorePhotos(favorites);
             if (!userId || request !== dialogRequest) return;
-            renderNotifications(notifications, storePhotos);
-            const unreadIds = notifications.filter(item => !item.is_read).map(item => item.id);
+            await renderNotifications(notifications, storePhotos);
+            if (!userId || request !== dialogRequest) return;
+            const unreadIds = favorites.filter(item => !item.is_read).map(item => item.id);
             for (let offset = 0; offset < unreadIds.length; offset += pageSize) {
                 const { error } = await client.from('community_favorite_notifications')
                     .update({ is_read: true }).eq('recipient_id', userId)
                     .in('id', unreadIds.slice(offset, offset + pageSize));
+                if (error) throw error;
+                if (!userId || request !== dialogRequest) return;
+            }
+            if (follows.some(item => !item.is_read)) {
+                const { error } = await client.from('community_follows')
+                    .update({ is_read: true }).eq('followed_id', userId).eq('is_read', false);
                 if (error) throw error;
                 if (!userId || request !== dialogRequest) return;
             }

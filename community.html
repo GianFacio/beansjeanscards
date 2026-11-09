@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="Find public card collector profiles and browse their card collections.">
     <title>Find Collectors | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="css/styles.css?v=4">
+    <link rel="stylesheet" href="css/styles.css?v=5">
     <link rel="preconnect" href="https://tmskcpzbcszpxydrpepj.supabase.co" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -24,6 +24,7 @@
             <div class="header-actions">
                 <a class="community-header-link" href="community.html" aria-current="page">Collectors</a>
                 <a id="favorites-nav" class="community-header-link" href="community.html?favorites=1" data-favorites-nav hidden>Favorites</a>
+                <a id="following-nav" class="community-header-link" href="community.html?following=1" data-following-nav hidden>Following</a>
                 <button type="button" id="community-join-trigger" class="community-header-link">Sign In / Join</button>
                 <a id="community-my-profile" class="community-header-link" href="profile.html" hidden>My Profile</a>
                 <button type="button" id="community-sign-out" class="community-header-link" hidden>Sign Out</button>
@@ -66,6 +67,19 @@
         <section id="favorites-grid" class="products community-card-grid" aria-label="Favorite cards"></section>
         <p id="favorites-empty" class="community-empty" hidden>You haven't favorited any cards yet.</p>
         <button id="favorites-signin" class="filter" type="button" hidden>Sign in to see your favorites</button>
+    </main>
+    <main class="community-page" id="following-page" hidden>
+        <section class="community-intro">
+            <h1>Following</h1>
+            <p>New cards from the collectors you follow.</p>
+        </section>
+        <p id="following-notice" class="community-notice" role="status" aria-live="polite"></p>
+        <div id="following-feed" aria-label="New cards from collectors you follow"></div>
+        <div id="following-empty" class="community-empty" hidden>
+            <p id="following-empty-text"></p>
+            <a id="following-find" class="filter" href="community.html" hidden>Find collectors</a>
+        </div>
+        <button id="following-signin" class="filter" type="button" hidden>Sign in to see who you follow</button>
     </main>
 
     <!-- Account creation and sign-in use Supabase Auth. -->
@@ -141,11 +155,13 @@
     <script src="js/core/supabase-config.js"></script>
     <script src="js/core/store-data.js"></script>
     <script src="js/admin/admin-access.js"></script>
-    <script src="js/community/community-navigation.js?v=2"></script>
+    <script src="js/community/community-navigation.js?v=4"></script>
     <script src="js/community/community-access.js?v=3"></script>
     <script src="js/community/community-favorites.js?v=1"></script>
+    <script src="js/community/community-follows.js?v=1"></script>
     <script src="js/community/favorites-page.js?v=1"></script>
-    <script src="js/community/community-directory.js?v=2"></script>
+    <script src="js/community/following-page.js?v=1"></script>
+    <script src="js/community/community-directory.js?v=3"></script>
     <script src="js/core/theme.js"></script>
 </body>
 

@@ -1,6 +1,6 @@
 // Search public profiles without exposing account emails.
 (async function () {
-    if (new URLSearchParams(window.location.search).get('favorites') === '1') return;
+    if (new URLSearchParams(window.location.search).get('favorites') === '1' || new URLSearchParams(window.location.search).get('following') === '1') return;
     const searchForm = document.querySelector('#community-search-form');
     const searchInput = document.querySelector('#community-search-input');
     const results = document.querySelector('#community-results');
@@ -29,7 +29,8 @@
                 avatar = `<img class="community-avatar" src="${window.escapeStoreHTML(data.signedUrl)}" alt="">`;
             }
 
-            return `<a class="community-profile-card" href="profile.html?user=${encodeURIComponent(profile.username)}">
+            const followButton = window.communityFollows.buttonMarkup(profile);
+            const link = `<a class="community-profile-link" href="profile.html?user=${encodeURIComponent(profile.username)}">
                 ${avatar}
                 <span class="community-profile-card-copy">
                     <strong>${window.escapeStoreHTML(profile.display_name)}</strong>
@@ -38,6 +39,7 @@
                 </span>
                 <span class="community-profile-open" aria-hidden="true">&rarr;</span>
             </a>`;
+            return `<div class="community-profile-card${followButton ? ' has-follow' : ''}">${link}${followButton}</div>`;
         }));
         results.innerHTML = cards.join('');
         empty.hidden = profiles.length > 0;
@@ -81,8 +83,15 @@
         searchDelay = window.setTimeout(() => searchProfiles(searchInput.value), 250);
     });
 
+    window.communityFollows.bind(results, message => showNotice(message, Boolean(message)));
+
     try {
-        await window.communityReady;
+        const session = await window.communityReady;
+        try {
+            await window.communityFollows.load(session);
+        } catch (error) {
+            console.warn(error.message);
+        }
         await searchProfiles();
         if (new URLSearchParams(window.location.search).get('signin') === '1') {
             if (document.querySelector('#community-join-trigger').hidden) {

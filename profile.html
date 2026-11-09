@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="A public collector profile and card collection.">
     <title>Collector Profile | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="css/styles.css?v=6">
+    <link rel="stylesheet" href="css/styles.css?v=7">
     <link rel="preconnect" href="https://tmskcpzbcszpxydrpepj.supabase.co" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -24,6 +24,7 @@
             <div class="header-actions">
                 <a class="community-header-link" href="community.html">Collectors</a>
                 <a class="community-header-link" href="community.html?favorites=1" data-favorites-nav hidden>Favorites</a>
+                <a class="community-header-link" href="community.html?following=1" data-following-nav hidden>Following</a>
                 <button type="button" id="community-join-trigger" class="community-header-link">Sign In / Join</button>
                 <a id="community-my-profile" class="community-header-link" href="profile.html" hidden>My Profile</a>
                 <button type="button" id="community-sign-out" class="community-header-link" hidden>Sign Out</button>
@@ -42,7 +43,13 @@
                 <p id="profile-username" class="community-eyebrow"></p>
                 <h1 id="profile-display-name"></h1>
                 <p id="profile-bio" class="profile-bio"></p>
+                <div id="profile-follow-stats" class="follow-stats" hidden>
+                    <button id="profile-followers-count" type="button" aria-haspopup="dialog" aria-controls="profile-follow-dialog"><strong>0</strong> followers</button>
+                    <button id="profile-following-count" type="button" aria-haspopup="dialog" aria-controls="profile-follow-dialog"><strong>0</strong> following</button>
+                    <span id="profile-card-count"><strong>0</strong> cards</span>
+                </div>
                 <div class="profile-badges">
+                    <span id="profile-follow-slot"></span>
                     <span id="profile-visibility" class="profile-visibility" hidden></span>
                     <button id="profile-edit-toggle" class="profile-visibility profile-edit-toggle" type="button" aria-haspopup="dialog" aria-controls="profile-editor" aria-expanded="false" hidden>Edit</button>
                     <button id="profile-add-card-toggle" class="profile-visibility profile-edit-toggle" type="button" aria-haspopup="dialog" aria-controls="collection-editor" aria-expanded="false" hidden>Add Card</button>
@@ -57,6 +64,13 @@
             <h2 id="profile-notifications-title">Notifications</h2>
             <p id="profile-notifications-message" class="community-form-message" role="status" aria-live="polite" hidden></p>
             <ul id="profile-notifications-list" class="profile-notifications-list"></ul>
+        </dialog>
+
+        <dialog id="profile-follow-dialog" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="profile-follow-title">
+            <button id="profile-follow-close" class="photo-zoom-close" type="button" aria-label="Close list" autofocus>&times;</button>
+            <h2 id="profile-follow-title">Followers</h2>
+            <p id="profile-follow-message" class="community-form-message" role="status" aria-live="polite" hidden></p>
+            <ul id="profile-follow-list" class="follow-list"></ul>
         </dialog>
 
         <dialog id="profile-editor" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="profile-editor-title">
@@ -98,11 +112,17 @@
             <button id="collection-editor-close" class="photo-zoom-close" type="button" aria-label="Close add card" autofocus>&times;</button>
             <h2 id="collection-editor-title">Add a card</h2>
             <form id="community-card-form" class="community-form">
-                <label>Card name
-                    <textarea name="name" class="card-name-input" rows="1" maxlength="120" placeholder="Set, player, and card name" required></textarea>
+                <label>Player
+                    <input name="player" type="text" maxlength="28" placeholder="Player name">
                 </label>
-                <label>Player or card detail
-                    <input name="detail" type="text" maxlength="80" placeholder="Player name or other detail">
+                <label>Set
+                    <input name="card_set" type="text" maxlength="34" placeholder="Set name">
+                </label>
+                <label>Year
+                    <input name="card_year" type="text" maxlength="9" inputmode="numeric" placeholder="1999">
+                </label>
+                <label>Card name
+                    <textarea name="name" class="card-name-input" rows="1" maxlength="120" placeholder="Card name" required></textarea>
                 </label>
                 <label>Grade
                     <select name="grade" required>
@@ -175,11 +195,17 @@
                     <section id="community-card-edit-panel" class="community-panel community-card-edit-panel" hidden>
                         <form id="community-card-edit-form" class="community-form">
                             <h2>Edit card</h2>
+                            <label>Player
+                                <input name="player" type="text" maxlength="28">
+                            </label>
+                            <label>Set
+                                <input name="card_set" type="text" maxlength="34">
+                            </label>
+                            <label>Year
+                                <input name="card_year" type="text" maxlength="9" inputmode="numeric">
+                            </label>
                             <label>Card name
                                 <textarea name="name" class="card-name-input" rows="1" maxlength="120" required></textarea>
-                            </label>
-                            <label>Player or card detail
-                                <input name="detail" type="text" maxlength="80">
                             </label>
                             <label>Grade
                                 <select name="grade" required>
@@ -355,11 +381,13 @@
     <script src="js/core/store-data.js"></script>
     <script src="js/admin/store-admin-tools.js"></script>
     <script src="js/admin/admin-access.js"></script>
-    <script src="js/community/community-navigation.js?v=2"></script>
+    <script src="js/community/community-navigation.js?v=4"></script>
     <script src="js/community/community-access.js?v=3"></script>
     <script src="js/community/community-favorites.js?v=1"></script>
-    <script src="js/community/profile-notifications.js?v=2"></script>
-    <script src="js/community/community-profile.js?v=6"></script>
+    <script src="js/community/community-follows.js?v=1"></script>
+    <script src="js/community/profile-notifications.js?v=3"></script>
+    <script src="js/community/profile-follows.js?v=3"></script>
+    <script src="js/community/community-profile.js?v=8"></script>
     <script src="js/core/theme.js"></script>
 </body>
 

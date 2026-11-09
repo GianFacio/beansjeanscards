@@ -1687,7 +1687,7 @@ img.community-avatar {
 
 .community-card-badge-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 8px;
     margin-top: 6px
@@ -1702,7 +1702,8 @@ img.community-avatar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px
+    gap: 4px;
+    padding-top: 11px
 }
 
 .favorite-control {
@@ -1728,6 +1729,8 @@ img.community-avatar {
 }
 
 .favorite-count {
+    min-width: 12px;
+    text-align: right;
     color: var(--muted-color);
     font-size: 13px;
     font-variant-numeric: tabular-nums

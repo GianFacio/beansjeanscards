@@ -3,6 +3,8 @@ const communityClient = window.getStoreSupabaseClient();
 const communityAuthDialog = document.querySelector('#community-auth-dialog');
 const communitySignInForm = document.querySelector('#community-signin-form');
 const communitySignUpForm = document.querySelector('#community-signup-form');
+const communityResetForm = document.querySelector('#community-reset-form');
+const communityNewPasswordForm = document.querySelector('#community-newpassword-form');
 const communityAuthTitle = document.querySelector('#community-auth-title');
 const communityAccountButton = document.querySelector('#community-join-trigger');
 const communityMyProfile = document.querySelector('#community-my-profile');
@@ -61,10 +63,15 @@ async function communitySignInError(error) {
 }
 
 function setCommunityAuthMode(mode) {
-    const signingUp = mode === 'signup';
-    communitySignInForm.hidden = signingUp;
-    communitySignUpForm.hidden = !signingUp;
-    communityAuthTitle.textContent = signingUp ? 'Create your account' : 'Sign In';
+    communitySignInForm.hidden = mode !== 'signin';
+    communitySignUpForm.hidden = mode !== 'signup';
+    communityResetForm.hidden = mode !== 'reset';
+    communityNewPasswordForm.hidden = mode !== 'newpassword';
+    communityAuthTitle.textContent = {
+        signup: 'Create your account',
+        reset: 'Reset your password',
+        newpassword: 'Choose a new password'
+    }[mode] || 'Sign In';
     document.querySelectorAll('.community-password-toggle').forEach(toggle => {
         const password = document.getElementById(toggle.getAttribute('aria-controls'));
         password.type = 'password';
@@ -74,6 +81,8 @@ function setCommunityAuthMode(mode) {
     });
     showCommunityAuthMessage(communitySignInForm, '');
     showCommunityAuthMessage(communitySignUpForm, '');
+    showCommunityAuthMessage(communityResetForm, '');
+    showCommunityAuthMessage(communityNewPasswordForm, '');
 }
 
 function updateCommunityAccountControls(session) {
@@ -141,6 +150,41 @@ communitySignInForm.addEventListener('submit', async event => {
     }
 });
 
+communityResetForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = communityResetForm.querySelector('[type="submit"]');
+    button.disabled = true;
+    showCommunityAuthMessage(communityResetForm, 'Sending link…');
+    try {
+        const options = {};
+        if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            options.redirectTo = new URL('community.html', window.location.href).href;
+        }
+        const { error } = await communityClient.auth.resetPasswordForEmail(communityResetForm.elements.email.value.trim(), options);
+        if (error) throw error;
+        showCommunityAuthMessage(communityResetForm, 'If that email has an account, a reset link is on its way. Check your inbox.');
+    } catch (error) {
+        showCommunityAuthMessage(communityResetForm, `Unable to send the link: ${error.message}`, true);
+    } finally {
+        button.disabled = false;
+    }
+});
+
+communityNewPasswordForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const button = communityNewPasswordForm.querySelector('[type="submit"]');
+    button.disabled = true;
+    showCommunityAuthMessage(communityNewPasswordForm, 'Saving…');
+    try {
+        const { data, error } = await communityClient.auth.updateUser({ password: communityNewPasswordForm.elements.password.value });
+        if (error) throw error;
+        window.location.assign(`profile.html?user=${encodeURIComponent(data.user.id)}`);
+    } catch (error) {
+        showCommunityAuthMessage(communityNewPasswordForm, `Unable to save the password: ${error.message}`, true);
+        button.disabled = false;
+    }
+});
+
 document.querySelectorAll('.community-password-toggle').forEach(toggle => {
     toggle.addEventListener('click', () => {
         const password = document.getElementById(toggle.getAttribute('aria-controls'));
@@ -169,7 +213,7 @@ communitySignUpForm.addEventListener('submit', async event => {
 
         const options = { data: { username, display_name: displayName } };
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            options.emailRedirectTo = new URL('confirmed.html', window.location.href).href;
+            options.emailRedirectTo = new URL('profile.html', window.location.href).href;
         }
         const { data, error } = await communityClient.auth.signUp({
             email: communitySignUpForm.elements.email.value.trim(),
@@ -228,7 +272,11 @@ window.communityReady = (async () => {
     return data.session;
 })();
 
-communityClient.auth.onAuthStateChange((_event, session) => {
+communityClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+        setCommunityAuthMode('newpassword');
+        if (!communityAuthDialog.open) communityAuthDialog.showModal();
+    }
     updateCommunityAccountControls(session);
     window.dispatchEvent(new CustomEvent('community-session-changed', { detail: { session } }));
 });

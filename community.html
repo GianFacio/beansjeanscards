@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="Find public card collector profiles and browse their card collections.">
     <title>Find Collectors | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="css/styles.css?v=16">
+    <link rel="stylesheet" href="css/styles.css?v=17">
     <link rel="preconnect" href="https://tmskcpzbcszpxydrpepj.supabase.co" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -109,6 +109,7 @@
                         </button>
                     </span>
                 </label>
+                <button type="button" class="community-forgot-link" data-switch-community-auth="reset">Forgot password?</button>
                 <p class="community-form-message" role="status" aria-live="polite" hidden></p>
                 <div class="store-modal-actions">
                     <button class="store-modal-button store-modal-cancel" type="button" data-switch-community-auth="signup">Create account</button>
@@ -148,6 +149,27 @@
                     <button class="store-modal-button store-modal-confirm" type="submit">Create Account</button>
                 </div>
             </form>
+            <form id="community-reset-form" class="admin-form community-auth-form" hidden>
+                <label>Email
+                    <input name="email" type="email" autocomplete="email" required>
+                    <span class="community-field-hint">Enter the email you signed up with and we'll send you a link to reset your password.</span>
+                </label>
+                <p class="community-form-message" role="status" aria-live="polite" hidden></p>
+                <div class="store-modal-actions">
+                    <button class="store-modal-button store-modal-cancel" type="button" data-switch-community-auth="signin">Back</button>
+                    <button class="store-modal-button store-modal-confirm" type="submit">Send Link</button>
+                </div>
+            </form>
+            <form id="community-newpassword-form" class="admin-form community-auth-form" hidden>
+                <label>New password
+                    <input name="password" type="password" minlength="8" autocomplete="new-password" required>
+                    <span class="community-field-hint">At least 8 characters.</span>
+                </label>
+                <p class="community-form-message" role="status" aria-live="polite" hidden></p>
+                <div class="store-modal-actions">
+                    <button class="store-modal-button store-modal-confirm" type="submit">Save Password</button>
+                </div>
+            </form>
         </div>
     </dialog>
 
@@ -156,7 +178,7 @@
     <script src="js/core/store-data.js"></script>
     <script src="js/admin/admin-access.js"></script>
     <script src="js/community/community-navigation.js?v=4"></script>
-    <script src="js/community/community-access.js?v=4"></script>
+    <script src="js/community/community-access.js?v=6"></script>
     <script src="js/community/community-favorites.js?v=4"></script>
     <script src="js/community/community-follows.js?v=1"></script>
     <script src="js/community/favorites-page.js?v=4"></script>

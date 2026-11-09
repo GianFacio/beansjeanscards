@@ -1429,6 +1429,18 @@ img.community-avatar {
     line-height: 1.45
 }
 
+.community-forgot-link {
+    justify-self: start;
+    padding: 0;
+    border: 0;
+    color: var(--muted-color);
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer
+}
+
 .community-field-hint {
     color: var(--muted-color);
     font-size: 12px;
@@ -2273,7 +2285,19 @@ img.community-avatar {
         min-height: 72px
     }
 
-    #profile-edit-form .community-field-hint {
+    #profile-edit-form .community-forgot-link {
+    justify-self: start;
+    padding: 0;
+    border: 0;
+    color: var(--muted-color);
+    background: none;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: underline;
+    cursor: pointer
+}
+
+.community-field-hint {
         margin: 0
     }
 

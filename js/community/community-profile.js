@@ -64,6 +64,7 @@
     let photoIsSideways = false;
     const removedSides = new Set();
     const previewUrls = new Map();
+    const cropSources = new Map();
 
     function resizeCardName(input) {
         input.style.height = 'auto';
@@ -120,11 +121,18 @@
         return path ? client.storage.from('community-card-photos').getPublicUrl(path).data.publicUrl : '';
     }
 
+    function setInputFile(input, file) {
+        const transfer = new DataTransfer();
+        if (file) transfer.items.add(file);
+        input.files = transfer.files;
+    }
+
     function resetPhotoSlots(form, entry = null) {
         removedSides.clear();
         for (const side of ['front', 'back']) {
             const input = form.elements[`${side}_photo`];
             input.value = '';
+            cropSources.delete(input);
             renderPhotoSlot(input, currentPhotoUrl(entry, side));
         }
     }
@@ -134,12 +142,49 @@
             button.addEventListener('click', () => document.getElementById(button.dataset.fileInput).click());
         });
         form.querySelectorAll('input[type="file"]').forEach(input => {
-            input.addEventListener('change', () => {
+            const messageBox = form === cardEditForm ? cardEditMessage : cardMessage;
+            input.addEventListener('change', async () => {
                 const side = input.name === 'front_photo' ? 'front' : 'back';
-                removedSides.delete(side);
                 const entry = form === cardEditForm ? activeCards.get(selectedCardId) : null;
+                const file = input.files[0];
+                if (file) {
+                    try {
+                        const cropped = await window.cardPhotoCrop.crop(file, form.elements.grade.value);
+                        setInputFile(input, cropped);
+                        if (cropped) cropSources.set(input, { original: file, kind: window.cardPhotoCrop.kindFor(form.elements.grade.value) });
+                        else cropSources.delete(input);
+                        setMessage(messageBox, '');
+                    } catch (error) {
+                        setInputFile(input, null);
+                        cropSources.delete(input);
+                        setMessage(messageBox, `Unable to crop that photo: ${error.message}`, true);
+                    }
+                }
+                removedSides.delete(side);
                 renderPhotoSlot(input, currentPhotoUrl(entry, side));
             });
+        });
+        // A new grade can change the standard size, so photos cropped for the old one are cropped again.
+        form.elements.grade.addEventListener('change', async () => {
+            const kind = window.cardPhotoCrop.kindFor(form.elements.grade.value);
+            const messageBox = form === cardEditForm ? cardEditMessage : cardMessage;
+            for (const input of form.querySelectorAll('input[type="file"]')) {
+                const source = cropSources.get(input);
+                if (!input.files[0] || !source || source.kind === kind) continue;
+                const side = input.name === 'front_photo' ? 'front' : 'back';
+                try {
+                    const cropped = await window.cardPhotoCrop.crop(source.original, form.elements.grade.value);
+                    setInputFile(input, cropped);
+                    if (cropped) cropSources.set(input, { original: source.original, kind });
+                    else cropSources.delete(input);
+                } catch (error) {
+                    setInputFile(input, null);
+                    cropSources.delete(input);
+                    setMessage(messageBox, `Unable to crop that photo: ${error.message}`, true);
+                }
+                const entry = form === cardEditForm ? activeCards.get(selectedCardId) : null;
+                renderPhotoSlot(input, currentPhotoUrl(entry, side));
+            }
         });
     }
     cardEditForm.querySelectorAll('[data-remove-side]').forEach(button => {

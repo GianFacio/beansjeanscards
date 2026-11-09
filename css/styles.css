@@ -1510,6 +1510,21 @@ img.community-avatar {
     margin-top: 12px
 }
 
+.card-crop-dialog {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto
+}
+
+.card-crop-viewport {
+    width: min(260px, calc(100vw - 96px));
+    aspect-ratio: 1140 / 1575
+}
+
+.card-crop-guide {
+    border-radius: 0;
+    background: none
+}
+
 .profile-summary {
     display: flex;
     align-items: center;

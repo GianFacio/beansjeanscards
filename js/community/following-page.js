@@ -6,7 +6,7 @@
     document.querySelector('#following-page').hidden = false;
     document.querySelector('a[href="community.html"]').removeAttribute('aria-current');
     document.querySelector('#following-nav').setAttribute('aria-current', 'page');
-    document.title = 'Following | Beans Jeans Card Club';
+    document.title = 'Feed | Beans Jeans Card Club';
 
     const client = window.communityClient;
     const notice = document.querySelector('#following-notice');

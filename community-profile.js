@@ -164,6 +164,41 @@
         target.classList.toggle('store-error', isError);
     }
 
+    function startProfileNotifications(ownerId) {
+        function reportFailure(error) {
+            console.error('Unable to start profile notifications:', error);
+            const status = document.querySelector('#profile-notifications-status') || notice;
+            setMessage(status, 'Unable to load notifications. Refresh the page and try again.', true);
+        }
+
+        function start() {
+            try {
+                if (!window.profileNotifications || typeof window.profileNotifications.start !== 'function') {
+                    throw new Error('The notification script did not initialize.');
+                }
+                window.profileNotifications.start(ownerId);
+            } catch (error) {
+                reportFailure(error);
+            }
+        }
+
+        if (window.profileNotifications) {
+            start();
+            return;
+        }
+
+        const retry = document.createElement('script');
+        const original = document.querySelector('script[src^="profile-notifications.js"]');
+        const url = new URL(original?.getAttribute('src') || 'profile-notifications.js', document.baseURI);
+        url.searchParams.set('retry', Date.now());
+        retry.src = url.href;
+        retry.onload = () => {
+            if (!window.communitySignOutInProgress) start();
+        };
+        retry.onerror = () => reportFailure(new Error('The notification script could not be loaded.'));
+        document.head.append(retry);
+    }
+
     function cardSaveError(error) {
         if (error.code === 'PGRST204' || error.code === '42703') {
             return 'Community card fields are outdated. Run supabase-community-card-fields.sql in the Supabase SQL Editor, then try again.';
@@ -1101,7 +1136,7 @@
                 document.querySelector('#profile-editor h2').textContent = 'Edit collector profile';
             }
         }
-        if (isOwner) window.profileNotifications.start(currentUser.id);
+        if (isOwner) startProfileNotifications(currentUser.id);
         await loadCards(activeProfile);
         if (favoritesError) setMessage(collectionNotice, `Unable to load favorites: ${favoritesError}`, true);
         const requestedCard = new URLSearchParams(window.location.search).get('card');

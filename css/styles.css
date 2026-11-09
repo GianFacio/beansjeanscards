@@ -1596,8 +1596,8 @@ img.community-avatar {
     position: absolute;
     top: 0;
     right: 0;
-    width: 10px;
-    height: 10px;
+    width: 13px;
+    height: 13px;
     border: 2px solid var(--page-background);
     border-radius: 50%;
     background: #dc3545;
@@ -1709,6 +1709,22 @@ img.community-avatar {
     display: inline-flex;
     align-items: center;
     gap: 2px
+}
+
+/* Narrower tap targets leave room for the grade and Grail badges beside the icons. */
+.community-card-badge-row .favorite-button {
+    width: 34px;
+    flex-basis: 34px;
+    padding: 10px 5px
+}
+
+.community-card-badge-row .favorite-control {
+    gap: 0;
+    flex: 0 0 auto
+}
+
+.community-card-badges {
+    min-width: 0
 }
 
 .favorite-count {

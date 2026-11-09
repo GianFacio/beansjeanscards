@@ -169,7 +169,7 @@ communitySignUpForm.addEventListener('submit', async event => {
 
         const options = { data: { username, display_name: displayName } };
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-            options.emailRedirectTo = new URL('profile.html', window.location.href).href;
+            options.emailRedirectTo = new URL('confirmed.html', window.location.href).href;
         }
         const { data, error } = await communityClient.auth.signUp({
             email: communitySignUpForm.elements.email.value.trim(),

@@ -1253,7 +1253,7 @@ img.community-avatar {
 
 .follow-button[aria-pressed="true"] {
     border-color: var(--active-background);
-    color: var(--navbar-text);
+    color: #fff;
     background: var(--active-background)
 }
 

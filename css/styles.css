@@ -1703,7 +1703,7 @@ img.community-avatar {
     flex-wrap: wrap;
     align-items: center;
     gap: 4px;
-    padding-top: 11px
+    padding: 11px 0
 }
 
 .favorite-control {
@@ -1729,8 +1729,6 @@ img.community-avatar {
 }
 
 .favorite-count {
-    min-width: 12px;
-    text-align: right;
     color: var(--muted-color);
     font-size: 13px;
     font-variant-numeric: tabular-nums

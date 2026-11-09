@@ -7,7 +7,7 @@
 
     function errorMessage(error) {
         if (error.code === 'PGRST205' || error.code === '42P01') {
-            return 'Favorites are not set up yet. Run supabase-community-favorites.sql in the Supabase SQL Editor.';
+            return 'Favorites are not set up yet. Run sql/supabase-community-favorites.sql in the Supabase SQL Editor.';
         }
         return error.message || String(error);
     }
@@ -30,7 +30,7 @@
         const { data, error } = await client.rpc('community_favorite_counts', { requested_card_ids: cardIds });
         if (error) {
             if (error.code === 'PGRST202') {
-                throw new Error('Favorite counts are not set up yet. Run supabase-community-favorite-counts.sql in the Supabase SQL Editor.');
+                throw new Error('Favorite counts are not set up yet. Run sql/supabase-community-favorite-counts.sql in the Supabase SQL Editor.');
             }
             throw new Error(errorMessage(error));
         }

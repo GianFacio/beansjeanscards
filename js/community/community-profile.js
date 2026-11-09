@@ -188,8 +188,8 @@
         }
 
         const retry = document.createElement('script');
-        const original = document.querySelector('script[src^="profile-notifications.js"]');
-        const url = new URL(original?.getAttribute('src') || 'profile-notifications.js', document.baseURI);
+        const original = document.querySelector(        'script[src^="js/community/profile-notifications.js"]');
+                const url = new URL(original?.getAttribute('src') || 'js/community/profile-notifications.js', document.baseURI);
         url.searchParams.set('retry', Date.now());
         retry.src = url.href;
         retry.onload = () => {
@@ -201,10 +201,10 @@
 
     function cardSaveError(error) {
         if (error.code === 'PGRST204' || error.code === '42703') {
-            return 'Community card fields are outdated. Run supabase-community-card-fields.sql in the Supabase SQL Editor, then try again.';
+            return 'Community card fields are outdated. Run sql/supabase-community-card-fields.sql in the Supabase SQL Editor, then try again.';
         }
         if (/permission denied for table community_cards/i.test(error.message)) {
-            return 'Community card permissions are outdated. Run the latest supabase-community-setup.sql in the Supabase SQL Editor, then try again.';
+            return 'Community card permissions are outdated. Run the latest sql/supabase-community-setup.sql in the Supabase SQL Editor, then try again.';
         }
         return error.message;
     }
@@ -1146,7 +1146,7 @@
         }
     } catch (error) {
         const message = /object not found/i.test(error.message)
-            ? 'Collection photos are not public yet. Run the latest supabase-community-setup.sql in the Supabase SQL Editor, then reload this profile.'
+            ? 'Collection photos are not public yet. Run the latest sql/supabase-community-setup.sql in the Supabase SQL Editor, then reload this profile.'
             : window.communityErrorMessage(error);
         setMessage(notice, `Unable to load this profile: ${message}`, true);
     }

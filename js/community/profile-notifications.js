@@ -20,7 +20,7 @@
 
     function describeError(error) {
         if (error.code === 'PGRST205' || error.code === '42P01') {
-            return 'Notifications are not set up yet. Run supabase-community-notifications.sql in the Supabase SQL Editor.';
+            return 'Notifications are not set up yet. Run sql/supabase-community-notifications.sql in the Supabase SQL Editor.';
         }
         return error.message || String(error);
     }

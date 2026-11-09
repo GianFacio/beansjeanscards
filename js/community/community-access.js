@@ -49,13 +49,13 @@ async function communitySignInError(error) {
     }
     if (status === 401) return 'Invalid username or password.';
     if (/community database setup is missing/i.test(detail)) {
-        return 'Community database setup is missing. Run supabase-community-setup.sql in the Supabase SQL Editor.';
+        return 'Community database setup is missing. Run sql/supabase-community-setup.sql in the Supabase SQL Editor.';
     }
     if (/community_profiles|schema cache/i.test(detail)) {
-        return 'Community database setup is missing. Run supabase-community-setup.sql in the Supabase SQL Editor.';
+        return 'Community database setup is missing. Run sql/supabase-community-setup.sql in the Supabase SQL Editor.';
     }
     if (/non-2xx status code/i.test(detail)) {
-        return 'Username sign-in could not reach a working function. Run supabase-community-setup.sql, deploy supabase/functions/community-sign-in, and configure its Supabase secrets.';
+        return 'Username sign-in could not reach a working function. Run sql/supabase-community-setup.sql, deploy supabase/functions/community-sign-in, and configure its Supabase secrets.';
     }
     return detail;
 }
@@ -238,7 +238,7 @@ window.showCommunityAuthMessage = showCommunityAuthMessage;
 window.communityErrorMessage = error => {
     const detail = error.message || String(error);
     if (error.code === 'PGRST202' || error.code === 'PGRST205') {
-        return `Community database setup is missing. Run supabase-community-setup.sql in the Supabase SQL Editor. ${detail}`;
+        return `Community database setup is missing. Run sql/supabase-community-setup.sql in the Supabase SQL Editor. ${detail}`;
     }
     return detail;
 };

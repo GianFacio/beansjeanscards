@@ -10,6 +10,9 @@
         document.querySelectorAll('[data-favorites-nav]').forEach(link => {
             link.hidden = !session?.user;
         });
+        document.querySelectorAll('[data-signin-nav]').forEach(link => {
+            link.hidden = Boolean(session?.user);
+        });
     }
 
     try {

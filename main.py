@@ -2,8 +2,14 @@
 
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 import webbrowser
+
+CONTENT_TYPES = {
+	".html": "text/html; charset=utf-8",
+	".css": "text/css; charset=utf-8",
+	".js": "text/javascript; charset=utf-8",
+}
 
 
 class StorefrontHandler(BaseHTTPRequestHandler):
@@ -11,31 +17,19 @@ class StorefrontHandler(BaseHTTPRequestHandler):
 
 	def do_GET(self):
 		request_path = urlsplit(self.path).path
-		# Fixed page and script routes.
-		assets = {
-			"/": ("index.html", "text/html; charset=utf-8"),
-			"/index.html": ("index.html", "text/html; charset=utf-8"),
-			"/collection.html": ("collection.html", "text/html; charset=utf-8"),
-			"/community.html": ("community.html", "text/html; charset=utf-8"),
-			"/profile.html": ("profile.html", "text/html; charset=utf-8"),
-			"/admin.html": ("admin.html", "text/html; charset=utf-8"),
-			"/styles.css": ("styles.css", "text/css; charset=utf-8"),
-			"/store-data.js": ("store-data.js", "text/javascript; charset=utf-8"),
-			"/store-admin-tools.js": ("store-admin-tools.js", "text/javascript; charset=utf-8"),
-			"/supabase-config.js": ("supabase-config.js", "text/javascript; charset=utf-8"),
-			"/admin.js": ("admin.js", "text/javascript; charset=utf-8"),
-			"/admin-access.js": ("admin-access.js", "text/javascript; charset=utf-8"),
-			"/community-access.js": ("community-access.js", "text/javascript; charset=utf-8"),
-			"/community-directory.js": ("community-directory.js", "text/javascript; charset=utf-8"),
-			"/community-profile.js": ("community-profile.js", "text/javascript; charset=utf-8"),
-			"/community-navigation.js": ("community-navigation.js", "text/javascript; charset=utf-8"),
-			"/supabase/config.toml": ("supabase/config.toml", "text/plain; charset=utf-8"),
-			"/theme.js": ("theme.js", "text/javascript; charset=utf-8"),
-		}
-		if request_path in assets:
-			filename, content_type = assets[request_path]
-			file_path = Path(__file__).parent / filename
-		else:
+		root = Path(__file__).parent.resolve()
+		if request_path == "/":
+			request_path = "/index.html"
+		relative = Path(unquote(request_path).lstrip("/"))
+		file_path = (root / relative).resolve()
+		# Only root pages and the css/ and js/ folders are served.
+		allowed = (
+			(file_path.parent == root and file_path.suffix == ".html")
+			or (file_path.is_relative_to(root / "css") and file_path.suffix == ".css")
+			or (file_path.is_relative_to(root / "js") and file_path.suffix == ".js")
+		)
+		content_type = CONTENT_TYPES.get(file_path.suffix)
+		if not allowed or content_type is None:
 			self.send_error(404)
 			return
 		try:

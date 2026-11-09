@@ -133,6 +133,10 @@ as $$
     where (
           trim(coalesce(search_term, '')) = ''
           or (
+              char_length(trim(search_term)) = 1
+              and starts_with(lower(p.username), lower(trim(search_term)))
+          )
+          or (
               char_length(trim(search_term)) >= 2
               and strpos(lower(p.username), lower(trim(search_term))) > 0
           )

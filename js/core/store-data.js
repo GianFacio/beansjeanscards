@@ -62,7 +62,7 @@ window.getStoreSupabaseClient = function () {
         && !key.startsWith('YOUR_');
 
     if (!isConfigured) {
-        throw new Error('Add your Supabase project URL and public anon/publishable key to supabase-config.js.');
+        throw new Error('Add your Supabase project URL and public anon/publishable key to js/core/supabase-config.js.');
     }
 
     if (!window.supabase?.createClient) {

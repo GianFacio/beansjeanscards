@@ -52,7 +52,7 @@
         const notifications = [];
         for (let offset = 0; ; offset += pageSize) {
             const { data, error } = await client.from('community_favorite_notifications')
-                .select('id, card_id, created_at, is_read, actor:community_profiles!actor_id(username), card:community_cards!card_id(name)')
+                .select('id, created_at, is_read, actor:community_profiles!actor_id(username), card:community_cards!card_id(name, photo_path, back_photo_path, source_store_card_id)')
                 .eq('recipient_id', userId)
                 .order('created_at', { ascending: false })
                 .order('id', { ascending: false })
@@ -63,23 +63,39 @@
         }
     }
 
-    function renderNotifications(notifications) {
+    async function loadStorePhotos(notifications) {
+        const ids = [...new Set(notifications.map(item => item.card)
+            .filter(card => card && !card.photo_path && !card.back_photo_path && card.source_store_card_id)
+            .map(card => card.source_store_card_id))];
+        const photos = new Map();
+        for (let offset = 0; offset < ids.length; offset += pageSize) {
+            const { data, error } = await client.from('cards')
+                .select('id, photos').in('id', ids.slice(offset, offset + pageSize));
+            if (error) throw error;
+            data.forEach(card => photos.set(card.id, card.photos?.find(photo => photo?.src)?.src));
+        }
+        return photos;
+    }
+
+    function renderNotifications(notifications, storePhotos) {
         list.replaceChildren();
         for (const notification of notifications) {
             if (!notification.actor?.username || !notification.card?.name) {
                 throw new Error('A notification could not be displayed because its collector or card is unavailable.');
             }
             const item = document.createElement('li');
-            const collector = document.createElement('a');
-            collector.href = `profile.html?user=${encodeURIComponent(notification.actor.username)}`;
-            collector.textContent = `@${notification.actor.username}`;
-            const card = document.createElement('a');
-            card.href = `profile.html?user=${encodeURIComponent(userId)}&card=${encodeURIComponent(notification.card_id)}`;
-            card.textContent = notification.card.name;
-            const time = document.createElement('time');
-            time.dateTime = notification.created_at;
-            time.textContent = new Date(notification.created_at).toLocaleString();
-            item.append(collector, document.createTextNode(' favorited your card '), card, time);
+            const path = notification.card.photo_path || notification.card.back_photo_path;
+            const imageUrl = path
+                ? client.storage.from('community-card-photos').getPublicUrl(path).data.publicUrl
+                : storePhotos.get(notification.card.source_store_card_id);
+            if (!imageUrl) throw new Error(`The photo for ${notification.card.name} could not be loaded.`);
+            const image = document.createElement('img');
+            image.src = imageUrl;
+            image.alt = notification.card.name;
+            image.loading = 'lazy';
+            const text = document.createElement('span');
+            text.textContent = `@${notification.actor.username} favorited your card`;
+            item.append(image, text);
             list.append(item);
         }
     }
@@ -94,7 +110,9 @@
         try {
             const notifications = await loadNotifications();
             if (!userId || request !== dialogRequest) return;
-            renderNotifications(notifications);
+            const storePhotos = await loadStorePhotos(notifications);
+            if (!userId || request !== dialogRequest) return;
+            renderNotifications(notifications, storePhotos);
             const unreadIds = notifications.filter(item => !item.is_read).map(item => item.id);
             for (let offset = 0; offset < unreadIds.length; offset += pageSize) {
                 const { error } = await client.from('community_favorite_notifications')

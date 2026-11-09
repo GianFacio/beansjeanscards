@@ -1477,6 +1477,9 @@ img.community-avatar {
 }
 
 .profile-notifications-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 12px;
     border: 1px solid var(--border-color);
     border-radius: 9px;
@@ -1484,14 +1487,12 @@ img.community-avatar {
     overflow-wrap: anywhere
 }
 
-.profile-notifications-list a {
-    color: var(--text-color)
-}
-
-.profile-notifications-list time {
+.profile-notifications-list img {
     display: block;
-    color: var(--muted-color);
-    font-size: 12px
+    flex: 0 0 54px;
+    width: 54px;
+    height: 72px;
+    object-fit: contain
 }
 
 .profile-visibility[hidden] {

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="A public collector profile and card collection.">
     <title>Collector Profile | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
     <link rel="preconnect" href="https://tmskcpzbcszpxydrpepj.supabase.co" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -15,12 +15,15 @@
     <!-- Community profile controls stay separate from the store's admin account. -->
     <header class="site-header">
         <div class="site-header-inner">
-            <a class="site-brand" href="index.html">Beans Jeans Card Club</a>
-            <div class="header-actions">
+            <div class="site-identity">
+                <a class="site-brand" href="index.html">Beans Jeans Card Club</a>
                 <button type="button" class="btn-outline theme-secondary btn-icon theme-toggle" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">
                     <i class="bi bi-circle-half header-icon" aria-hidden="true"></i>
                 </button>
+            </div>
+            <div class="header-actions">
                 <a class="community-header-link" href="community.html">Collectors</a>
+                <a class="community-header-link" href="community.html?favorites=1" data-favorites-nav hidden>Favorites</a>
                 <button type="button" id="community-join-trigger" class="community-header-link">Sign In / Join</button>
                 <a id="community-my-profile" class="community-header-link" href="profile.html" hidden>My Profile</a>
                 <button type="button" id="community-sign-out" class="community-header-link" hidden>Sign Out</button>
@@ -55,7 +58,8 @@
                     <input name="display_name" type="text" minlength="2" maxlength="40" required>
                 </label>
                 <label>Username
-                    <input name="username" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required>
+                    <input name="username" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" aria-describedby="profile-username-hint" required>
+                    <span id="profile-username-hint" class="community-field-hint">Usernames are unique and not case-sensitive.</span>
                 </label>
                 <label>Bio
                     <textarea name="bio" rows="3" maxlength="240" placeholder="Tell other collectors a little about yourself"></textarea>
@@ -84,7 +88,6 @@
         <dialog id="collection-editor" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="collection-editor-title">
             <button id="collection-editor-close" class="photo-zoom-close" type="button" aria-label="Close add card" autofocus>&times;</button>
             <h2 id="collection-editor-title">Add a card</h2>
-            <p>New cards are added to your collection immediately.</p>
             <form id="community-card-form" class="community-form">
                 <label>Card name
                     <textarea name="name" class="card-name-input" rows="1" maxlength="120" placeholder="Set, player, and card name" required></textarea>
@@ -147,7 +150,7 @@
                     <h2 id="profile-collection-title">Card Collection</h2>
                 </div>
             </div>
-            <div id="community-card-filters" class="filters" aria-label="Filter cards by grade"></div>
+            <div id="community-card-filters" class="filters" aria-label="Filter or sort cards"></div>
             <p id="collection-notice" class="community-notice" role="status" aria-live="polite"></p>
             <section id="community-card-grid" class="products community-card-grid" aria-label="Cards in this collection"></section>
             <p id="community-card-empty" class="community-empty" hidden>No cards have been added to this collection yet.</p>
@@ -286,7 +289,8 @@
                     <input name="display_name" type="text" minlength="2" maxlength="40" autocomplete="name" required>
                 </label>
                 <label>Username
-                    <input name="username" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="username" required>
+                    <input name="username" type="text" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" autocomplete="username" aria-describedby="profile-signup-username-hint" required>
+                    <span id="profile-signup-username-hint" class="community-field-hint">Usernames are unique and not case-sensitive.</span>
                 </label>
                 <label>Email
                     <input name="email" type="email" autocomplete="email" required>
@@ -343,8 +347,9 @@
     <script src="store-admin-tools.js"></script>
     <script src="admin-access.js"></script>
     <script src="community-navigation.js"></script>
-    <script src="community-access.js"></script>
-    <script src="community-profile.js"></script>
+    <script src="community-access.js?v=3"></script>
+    <script src="community-favorites.js?v=1"></script>
+    <script src="community-profile.js?v=3"></script>
     <script src="theme.js"></script>
 </body>
 

@@ -21,6 +21,16 @@ async function ensureCommunitySetup() {
     if (error) throw new Error(window.communityErrorMessage(error));
 }
 
+window.ensureCommunityUsernameAvailable = async (username, excludedProfileId) => {
+    let query = communityClient.from('community_profiles')
+        .select('id')
+        .eq('username', username);
+    if (excludedProfileId) query = query.neq('id', excludedProfileId);
+    const { data, error } = await query.limit(1);
+    if (error) throw new Error(`Unable to check username availability: ${window.communityErrorMessage(error)}`);
+    if (data.length) throw new Error('That username is already taken. Please choose another one.');
+};
+
 async function communitySignInError(error) {
     const response = error.context;
     let responseBody;
@@ -117,7 +127,10 @@ communitySignInForm.addEventListener('submit', async event => {
         if (sessionError) throw sessionError;
         communityAuthDialog.close();
         communitySignInForm.reset();
-        window.location.assign(`profile.html?user=${encodeURIComponent(sessionData.user.id)}`);
+        const destination = new URLSearchParams(window.location.search).get('favorites') === '1'
+            ? 'community.html?favorites=1'
+            : `profile.html?user=${encodeURIComponent(sessionData.user.id)}`;
+        window.location.assign(destination);
     } catch (error) {
         const message = error.context
             ? await communitySignInError(error)
@@ -152,6 +165,7 @@ communitySignUpForm.addEventListener('submit', async event => {
         if (!/^[a-z0-9_]{3,24}$/.test(username)) {
             throw new Error('Use 3–24 letters, numbers, or underscores for your username.');
         }
+        await window.ensureCommunityUsernameAvailable(username);
 
         const options = { data: { username, display_name: displayName } };
         if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
@@ -162,11 +176,17 @@ communitySignUpForm.addEventListener('submit', async event => {
             password: communitySignUpForm.elements.password.value,
             options
         });
-        if (error) throw error;
+        if (error) {
+            await window.ensureCommunityUsernameAvailable(username);
+            throw error;
+        }
 
         if (data.session) {
             communitySignUpForm.reset();
-            window.location.assign(`profile.html?user=${encodeURIComponent(data.user.id)}`);
+            const destination = new URLSearchParams(window.location.search).get('favorites') === '1'
+                ? 'community.html?favorites=1'
+                : `profile.html?user=${encodeURIComponent(data.user.id)}`;
+            window.location.assign(destination);
         } else {
             showCommunityAuthMessage(
                 communitySignUpForm,
@@ -184,9 +204,9 @@ communitySignOut.addEventListener('click', async () => {
     communitySignOut.disabled = true;
     try {
         const confirmed = await window.confirmStoreAction({
-            title: 'Sign out?',
+            title: 'Sign Out?',
             message: 'Are you sure you want to sign out?',
-            confirmLabel: 'Sign out'
+            confirmLabel: 'Sign Out'
         });
         if (!confirmed) return;
         window.communitySignOutInProgress = true;

@@ -1,6 +1,9 @@
 -- Community profiles and personal card collections.
+-- Usernames are stored lowercase and the unique constraint is the final authority
+-- when concurrent sign-ups or profile updates choose the same username.
 -- Run supabase-setup.sql first, then run this script before enabling the community pages.
 -- Existing installations can run supabase-community-card-fields.sql for the card form update.
+-- Run supabase-community-favorites.sql afterwards to enable favorites.
 
 create table if not exists public.community_profiles (
     id uuid primary key references auth.users (id) on delete cascade,

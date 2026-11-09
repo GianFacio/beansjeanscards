@@ -5,15 +5,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Admin | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
 
 <body>
     <header class="site-header">
         <div class="site-header-inner">
-            <a class="site-brand" href="index.html">Beans Jeans Card Club</a>
-            <div class="header-actions">
+            <div class="site-identity">
+                <a class="site-brand" href="index.html">Beans Jeans Card Club</a>
                 <button type="button" class="theme-toggle" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">
                     <i class="bi bi-circle-half header-icon" aria-hidden="true"></i>
                 </button>
@@ -30,7 +30,7 @@
         <section id="admin-dashboard" hidden>
             <h1>Add a card</h1>
             <p>New cards are added to your collection immediately.</p>
-            <button type="button" id="admin-sign-out" class="filter">Sign out</button>
+            <button type="button" id="admin-sign-out" class="filter">Sign Out</button>
             <form id="card-form" class="admin-form">
                 <label>Card ID
                     <input id="card-id" name="id" pattern="[a-z0-9\-]+" autocomplete="off" required>

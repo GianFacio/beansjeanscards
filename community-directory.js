@@ -1,5 +1,6 @@
 // Search public profiles without exposing account emails.
 (async function () {
+    if (new URLSearchParams(window.location.search).get('favorites') === '1') return;
     const searchForm = document.querySelector('#community-search-form');
     const searchInput = document.querySelector('#community-search-input');
     const results = document.querySelector('#community-results');

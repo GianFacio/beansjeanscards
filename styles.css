@@ -97,6 +97,17 @@ main {
     gap: 16px
 }
 
+.site-identity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0
+}
+
+.site-identity .theme-toggle {
+    flex: 0 0 44px
+}
+
 .header-actions {
     display: flex;
     align-items: center;
@@ -143,7 +154,7 @@ a {
 }
 
 /* Bootstrap header icons share one size and inherit their button color. */
-.header-actions > button > .header-icon {
+.theme-toggle > .header-icon {
     display: block;
     color: inherit;
     width: 24px;
@@ -152,7 +163,7 @@ a {
     line-height: 1
 }
 
-.header-actions > button > svg.header-icon {
+.theme-toggle > svg.header-icon {
     width: 44px;
     height: 44px
 }
@@ -1495,6 +1506,72 @@ img.community-avatar {
     min-width: 0
 }
 
+.community-card-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 6px
+}
+
+.community-card-badge-row .grade-badge {
+    align-self: center;
+    margin: 0
+}
+
+.favorite-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px
+}
+
+.favorite-count {
+    color: var(--muted-color);
+    font-size: 13px;
+    font-variant-numeric: tabular-nums
+}
+
+.favorite-button {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    padding: 10px;
+    border: 0;
+    border-radius: 6px;
+    color: var(--text-color);
+    background: transparent;
+    cursor: pointer
+}
+
+.favorite-button svg {
+    width: 24px;
+    height: 24px;
+    fill: transparent;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linejoin: round
+}
+
+.favorite-button[aria-pressed="true"] svg {
+    fill: var(--active-background)
+}
+
+.favorite-button:hover {
+    background: var(--navbar-background)
+}
+
+.favorite-button:focus-visible {
+    outline: 2px solid var(--active-background);
+    outline-offset: 2px
+}
+
+.favorite-button:disabled {
+    opacity: .6;
+    cursor: wait
+}
+
 .community-card-open {
     display: flex;
     flex-direction: column;
@@ -1540,7 +1617,7 @@ img.community-avatar {
 }
 
 .community-card .product-meta {
-    margin-top: 10px
+    margin-top: 0
 }
 
 .community-card-title {
@@ -1550,6 +1627,22 @@ img.community-avatar {
     font-size: 15px;
     font-weight: bold;
     overflow-wrap: anywhere
+}
+
+.favorite-card-owner {
+    display: inline-block;
+    margin-top: 4px;
+    color: var(--muted-color);
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    text-decoration: underline;
+    text-underline-offset: 3px
+}
+
+.favorite-card-owner:focus-visible {
+    outline: 2px solid var(--active-background);
+    outline-offset: 3px
 }
 
 .community-card-detail-dialog {
@@ -1645,8 +1738,7 @@ img.community-avatar {
     justify-self: center
 }
 
-.community-form .photo-help-text,
-#collection-editor > p {
+.community-form .photo-help-text {
     color: var(--muted-color)
 }
 
@@ -1743,6 +1835,13 @@ img.community-avatar {
 /* Header contents wrap on narrower screens. */
 @media(max-width:700px) {
     .site-header-inner {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px 16px
+    }
+
+    .header-actions {
+        justify-content: center;
         flex-wrap: wrap
     }
 
@@ -1806,8 +1905,12 @@ img.community-avatar {
 
     .community-header-link {
         min-height: 34px;
-        padding: 6px 8px;
+        padding: 6px 7px;
         font-size: 12px
+    }
+
+    .header-actions {
+        gap: 4px
     }
 
     .community-intro h1 {

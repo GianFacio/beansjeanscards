@@ -44,9 +44,9 @@ signOutButton.addEventListener('click', async () => {
     signOutButton.disabled = true;
     try {
         const confirmed = await window.confirmStoreAction({
-            title: 'Sign out?',
+            title: 'Sign Out?',
             message: 'Are you sure you want to sign out?',
-            confirmLabel: 'Sign out'
+            confirmLabel: 'Sign Out'
         });
         if (!confirmed) return;
         const { error } = await window.getStoreSupabaseClient().auth.signOut();

@@ -438,21 +438,6 @@
         updateAvatarActions();
     }
 
-    function buildCardMarkup(card, imageUrl) {
-        return `<article class="product community-card" data-grade="${window.escapeStoreHTML(card.grade)}">
-            <button type="button" class="community-card-open" data-open-card="${window.escapeStoreHTML(card.id)}" aria-label="View ${window.escapeStoreHTML(card.name)}">
-                <span class="community-card-image">
-                    <img src="${window.escapeStoreHTML(imageUrl)}" alt="${window.escapeStoreHTML(card.detail || card.name)} card" loading="lazy" decoding="async">
-                </span>
-                <span class="product-meta">
-                    <span class="grade-badge ${card.grade === 'Raw' ? 'grade-badge-raw' : card.grade === 'PSA 10' ? 'grade-badge-psa10' : 'grade-badge-graded'}">${window.escapeStoreHTML(card.grade)}</span>
-                    <span class="detail">${window.escapeStoreHTML(card.detail || '')}</span>
-                </span>
-                <span class="community-card-title">${window.escapeStoreHTML(card.name)}</span>
-            </button>
-        </article>`;
-    }
-
     function renderSelectedCard() {
         const entry = activeCards.get(selectedCardId);
         if (!entry) {
@@ -517,13 +502,13 @@
         const storePhotosById = new Map();
         if (storeSourceIds.length > 0) {
             const { data: storeCards, error: storeCardError } = await client.from('cards')
-                .select('id, title, photos')
+                .select('id, title, photos, created_at')
                 .in('id', storeSourceIds);
             if (storeCardError) throw storeCardError;
             for (const storeCard of storeCards || []) {
                 const photos = (storeCard.photos || []).filter(photo => photo?.src);
                 if (photos.length === 0) throw new Error(`The store card ${storeCard.id} has no display photo.`);
-                storePhotosById.set(storeCard.id, { photos, title: storeCard.title, photoCount: (storeCard.photos || []).length });
+                storePhotosById.set(storeCard.id, { photos, title: storeCard.title, photoCount: (storeCard.photos || []).length, createdAt: storeCard.created_at });
             }
         }
 
@@ -531,6 +516,13 @@
             if (first.grade === 'Raw') return second.grade === 'Raw' ? 0 : 1;
             if (second.grade === 'Raw') return -1;
             return Number(second.grade.slice(4)) - Number(first.grade.slice(4));
+        });
+        const recentCards = [...(data || [])].sort((first, second) => {
+            const addedOrder = second.created_at.localeCompare(first.created_at);
+            if (addedOrder) return addedOrder;
+            const firstOriginal = storePhotosById.get(first.source_store_card_id)?.createdAt || first.created_at;
+            const secondOriginal = storePhotosById.get(second.source_store_card_id)?.createdAt || second.created_at;
+            return secondOriginal.localeCompare(firstOriginal);
         });
         const cards = await Promise.all(orderedCards.map(async card => {
             let photos;
@@ -554,25 +546,39 @@
                 ? storeCard.photos.some(photo => photo.rotationEnabled === true)
                 : card.source_store_card_id === 'marlon');
             activeCards.set(card.id, { card, photos, storeTitle: storeCard?.title, storePhotoCount: storeCard?.photoCount, storeRotation });
-            return buildCardMarkup(card, photos[0].src);
+            return window.communityFavorites.cardMarkup(card, photos[0].src);
         }));
         cardGrid.innerHTML = cards.join('');
+        try {
+            await window.communityFavorites.refreshCounts(orderedCards.map(card => card.id), cardGrid);
+        } catch (error) {
+            setMessage(collectionNotice, `Unable to load favorite counts: ${error.message}`, true);
+        }
         const grades = [...new Set(orderedCards.map(card => card.grade))]
             .sort((first, second) => {
                 if (first === 'Raw') return 1;
                 if (second === 'Raw') return -1;
                 return Number(second.slice(4)) - Number(first.slice(4));
             });
-        cardFilters.innerHTML = ['all', ...grades].map(grade =>
-            `<button class="filter${grade === 'all' ? ' active' : ''}" type="button" data-grade-filter="${window.escapeStoreHTML(grade)}">${grade === 'all' ? 'All cards' : window.escapeStoreHTML(grade)}</button>`
+        cardFilters.innerHTML = ['all', ...grades, 'recent'].map(grade =>
+            `<button class="filter${grade === 'all' ? ' active' : ''}" type="button" data-grade-filter="${window.escapeStoreHTML(grade)}" aria-pressed="${grade === 'all'}">${grade === 'all' ? 'All Cards' : grade === 'recent' ? 'Recent' : window.escapeStoreHTML(grade)}</button>`
         ).join('');
+        const cardElements = new Map(
+            [...cardGrid.querySelectorAll('.community-card')].map(element => [element.dataset.cardId, element])
+        );
         cardFilters.querySelectorAll('[data-grade-filter]').forEach(button => {
             button.addEventListener('click', () => {
-                cardFilters.querySelector('.filter.active')?.classList.remove('active');
+                const previous = cardFilters.querySelector('.filter.active');
+                previous?.classList.remove('active');
+                previous?.setAttribute('aria-pressed', 'false');
                 button.classList.add('active');
+                button.setAttribute('aria-pressed', 'true');
                 const selectedGrade = button.dataset.gradeFilter;
-                cardGrid.querySelectorAll('.community-card').forEach(card => {
-                    card.hidden = selectedGrade !== 'all' && card.dataset.grade !== selectedGrade;
+                const displayOrder = selectedGrade === 'recent' ? recentCards : orderedCards;
+                displayOrder.forEach(card => {
+                    const element = cardElements.get(card.id);
+                    element.hidden = selectedGrade !== 'all' && selectedGrade !== 'recent' && card.grade !== selectedGrade;
+                    cardGrid.append(element);
                 });
             });
         });
@@ -826,6 +832,18 @@
         let profileSaved = false;
 
         try {
+            const updates = {
+                username: profileForm.elements.username.value.trim().toLowerCase(),
+                display_name: profileForm.elements.display_name.value.trim(),
+                bio: profileForm.elements.bio.value.trim()
+            };
+            if (!/^[a-z0-9_]{3,24}$/.test(updates.username)) {
+                throw new Error('Use 3–24 letters, numbers, or underscores for your username.');
+            }
+            if (updates.username !== activeProfile.username) {
+                await window.ensureCommunityUsernameAvailable(updates.username, activeProfile.id);
+            }
+
             const image = croppedAvatarFile;
             if (image) {
                 const extension = supportedImageType(image);
@@ -839,23 +857,20 @@
                 if (uploadError) throw uploadError;
             }
 
-            const updates = {
-                username: profileForm.elements.username.value.trim().toLowerCase(),
-                display_name: profileForm.elements.display_name.value.trim(),
-                bio: profileForm.elements.bio.value.trim()
-            };
             const avatarChanged = Boolean(uploadedAvatarPath) || removeAvatar;
             if (avatarChanged) updates.avatar_path = uploadedAvatarPath || null;
-            if (!/^[a-z0-9_]{3,24}$/.test(updates.username)) {
-                throw new Error('Use 3–24 letters, numbers, or underscores for your username.');
-            }
 
             const { data, error } = await client.from('community_profiles')
                 .update(updates)
                 .eq('id', activeProfile.id)
                 .select('id, username, display_name, bio, is_public, is_founder, avatar_path')
                 .single();
-            if (error) throw error;
+            if (error) {
+                if (error.code === '23505') {
+                    throw new Error('That username is already taken. Please choose another one.');
+                }
+                throw error;
+            }
 
             const previousAvatarPath = activeProfile.avatar_path;
             profileSaved = true;
@@ -1006,7 +1021,26 @@
         if (selectedCardId && (isOwner || isAdmin)) deleteCard(selectedCardId, event.currentTarget);
     });
 
-    cardGrid.addEventListener('click', event => {
+    cardGrid.addEventListener('click', async event => {
+        const favoriteButton = event.target.closest('[data-favorite-card]');
+        if (favoriteButton) {
+            try {
+                await window.communityFavorites.toggle(favoriteButton);
+            } catch (error) {
+                setMessage(collectionNotice, `Unable to update favorites: ${error.message}`, true);
+                return;
+            }
+            try {
+                await window.communityFavorites.refreshCounts([favoriteButton.dataset.favoriteCard], cardGrid);
+                setMessage(collectionNotice, '');
+            } catch (error) {
+                const count = favoriteButton.closest('article').querySelector('[data-favorite-count]');
+                count.textContent = '–';
+                count.setAttribute('aria-label', 'Favorite count unavailable');
+                setMessage(collectionNotice, `Favorite updated, but its count could not be refreshed: ${error.message}`, true);
+            }
+            return;
+        }
         const openButton = event.target.closest('[data-open-card]');
         if (openButton) {
             openCardDetails(openButton.dataset.openCard);
@@ -1017,6 +1051,12 @@
     try {
         const session = await window.communityReady;
         currentUser = session?.user || null;
+        let favoritesError = '';
+        try {
+            await window.communityFavorites.load(session);
+        } catch (error) {
+            favoritesError = error.message;
+        }
         if (currentUser) {
             const { data: adminStatus, error: adminError } = await client.rpc('is_store_admin');
             if (adminError) throw adminError;
@@ -1062,6 +1102,12 @@
             }
         }
         await loadCards(activeProfile);
+        if (favoritesError) setMessage(collectionNotice, `Unable to load favorites: ${favoritesError}`, true);
+        const requestedCard = new URLSearchParams(window.location.search).get('card');
+        if (requestedCard) {
+            if (activeCards.has(requestedCard)) openCardDetails(requestedCard);
+            else setMessage(collectionNotice, 'This card is no longer available.');
+        }
     } catch (error) {
         const message = /object not found/i.test(error.message)
             ? 'Collection photos are not public yet. Run the latest supabase-community-setup.sql in the Supabase SQL Editor, then reload this profile.'

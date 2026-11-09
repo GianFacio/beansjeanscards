@@ -1,4 +1,4 @@
-// Send signed-in members to their own profile when they select the site title.
+// Update member navigation when the session changes.
 (async function () {
     const siteBrand = document.querySelector('.site-brand');
     if (!siteBrand) return;
@@ -7,6 +7,9 @@
         siteBrand.href = session?.user
             ? `profile.html?user=${encodeURIComponent(session.user.id)}`
             : 'index.html';
+        document.querySelectorAll('[data-favorites-nav]').forEach(link => {
+            link.hidden = !session?.user;
+        });
     }
 
     try {

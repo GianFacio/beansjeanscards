@@ -548,6 +548,7 @@
         detailGrade.textContent = card.detail ? `${card.grade} · ${card.detail}` : card.grade;
         detailTitle.textContent = card.name;
         detailEditToggle.hidden = !(isOwner || isAdmin);
+        detailImage.classList.toggle('is-grail', Boolean(card.is_grail));
         detailImage.src = selectedPhotos[selectedPhotoIndex].src;
         detailImage.alt = selectedPhotos[selectedPhotoIndex].alt || `${card.detail || card.name} card`;
         detailPhotoCount.textContent = `${selectedPhotos[selectedPhotoIndex].side || `Photo ${selectedPhotoIndex + 1}`} · ${selectedPhotoIndex + 1} of ${selectedPhotos.length}`;
@@ -611,6 +612,7 @@
         }
 
         const orderedCards = [...(data || [])].sort((first, second) => {
+            if (Boolean(first.is_grail) !== Boolean(second.is_grail)) return first.is_grail ? -1 : 1;
             if (first.grade === 'Raw') return second.grade === 'Raw' ? 0 : 1;
             if (second.grade === 'Raw') return -1;
             return Number(second.grade.slice(4)) - Number(first.grade.slice(4));
@@ -658,8 +660,8 @@
                 if (second === 'Raw') return -1;
                 return Number(second.slice(4)) - Number(first.slice(4));
             });
-        cardFilters.innerHTML = ['all', ...grades, 'recent'].map(grade =>
-            `<button class="filter${grade === 'all' ? ' active' : ''}" type="button" data-grade-filter="${window.escapeStoreHTML(grade)}" aria-pressed="${grade === 'all'}">${grade === 'all' ? 'All Cards' : grade === 'recent' ? 'Recent' : window.escapeStoreHTML(grade)}</button>`
+        cardFilters.innerHTML = ['all', ...(orderedCards.some(card => card.is_grail) ? ['grail'] : []), ...grades, 'recent'].map(grade =>
+            `<button class="filter${grade === 'all' ? ' active' : ''}" type="button" data-grade-filter="${window.escapeStoreHTML(grade)}" aria-pressed="${grade === 'all'}">${grade === 'all' ? 'All Cards' : grade === 'recent' ? 'Recent' : grade === 'grail' ? 'Grails' : window.escapeStoreHTML(grade)}</button>`
         ).join('');
         const cardElements = new Map(
             [...cardGrid.querySelectorAll('.community-card')].map(element => [element.dataset.cardId, element])
@@ -675,7 +677,7 @@
                 const displayOrder = selectedGrade === 'recent' ? recentCards : orderedCards;
                 displayOrder.forEach(card => {
                     const element = cardElements.get(card.id);
-                    element.hidden = selectedGrade !== 'all' && selectedGrade !== 'recent' && card.grade !== selectedGrade;
+                    element.hidden = selectedGrade !== 'all' && selectedGrade !== 'recent' && (selectedGrade === 'grail' ? !card.is_grail : card.grade !== selectedGrade);
                     cardGrid.append(element);
                 });
             });
@@ -753,14 +755,13 @@
         fillCardDetails(cardEditForm, entry.card);
         cardEditForm.elements.grade.value = entry.card.grade;
         cardEditForm.elements.rotation_enabled.checked = entry.card.rotation_enabled ?? Boolean(entry.storeRotation);
+        cardEditForm.elements.is_grail.checked = Boolean(entry.card.is_grail);
         const storePhotos = isStorePhotoSource(entry);
         resetPhotoSlots(cardEditForm, entry);
         document.querySelector('#community-card-edit-photos').hidden = storePhotos && !isAdmin;
         const linkedNotice = document.querySelector('#community-card-linked-photos');
-        linkedNotice.hidden = !storePhotos;
-        linkedNotice.textContent = isAdmin
-            ? 'Photo changes also update the store card.'
-            : 'Only a store admin can change photos for this linked card.';
+        linkedNotice.hidden = !storePhotos || isAdmin;
+        linkedNotice.textContent = 'Only a store admin can change photos for this linked card.';
         setMessage(cardEditMessage, '');
         cardEditPanel.hidden = false;
         resizeCardName(cardEditForm.elements.name);
@@ -835,7 +836,8 @@
                 name: cardEditForm.elements.name.value.trim(),
                 ...cardDetails,
                 grade: cardEditForm.elements.grade.value,
-                rotation_enabled: cardEditForm.elements.rotation_enabled.checked
+                rotation_enabled: cardEditForm.elements.rotation_enabled.checked,
+                is_grail: cardEditForm.elements.is_grail.checked
             };
             if (updates.name !== entry.card.name) updates.title = updates.name;
             if (photoPaths.front || removedSides.has('front')) updates.photo_path = photoPaths.front || null;
@@ -902,7 +904,8 @@
                     return;
                 }
             }
-            setMessage(cardEditMessage, 'Card updated.');
+            setMessage(cardEditMessage, '');
+            cardEditPanel.hidden = true;
         } catch (error) {
             if (uploadedPhotoPaths.length && !cardSaved) {
                 const { error: cleanupError } = await client.storage.from('community-card-photos').remove(uploadedPhotoPaths);
@@ -1041,6 +1044,7 @@
                 grade: cardForm.elements.grade.value,
                 title: cardForm.elements.name.value.trim(),
                 rotation_enabled: cardForm.elements.rotation_enabled.checked,
+                is_grail: cardForm.elements.is_grail.checked,
                 photo_path: photoPaths.front || null,
                 back_photo_path: photoPaths.back || null
             });
@@ -1122,7 +1126,7 @@
     });
 
     cardGrid.addEventListener('click', async event => {
-        const favoriteButton = event.target.closest('[data-favorite-card]');
+        const favoriteButton = event.target.closest('[data-favorite-card], [data-like-card]');
         if (favoriteButton) {
             try {
                 await window.communityFavorites.toggle(favoriteButton);
@@ -1131,12 +1135,12 @@
                 return;
             }
             try {
-                await window.communityFavorites.refreshCounts([favoriteButton.dataset.favoriteCard], cardGrid);
+                await window.communityFavorites.refreshCounts([favoriteButton.closest('article').dataset.cardId], cardGrid);
                 setMessage(collectionNotice, '');
             } catch (error) {
-                const count = favoriteButton.closest('article').querySelector('[data-favorite-count]');
+                const count = favoriteButton.closest('article').querySelector('[data-like-count]');
                 count.textContent = '–';
-                count.setAttribute('aria-label', 'Favorite count unavailable');
+                count.setAttribute('aria-label', 'Like count unavailable');
                 setMessage(collectionNotice, `Favorite updated, but its count could not be refreshed: ${error.message}`, true);
             }
             return;

@@ -43,11 +43,11 @@
     });
 
     feed.addEventListener('click', async event => {
-        const button = event.target.closest('[data-favorite-card]');
+        const button = event.target.closest('[data-favorite-card], [data-like-card]');
         if (!button) return;
         try {
             await window.communityFavorites.toggle(button);
-            await window.communityFavorites.refreshCounts([button.dataset.favoriteCard], feed);
+            await window.communityFavorites.refreshCounts([button.closest('article').dataset.cardId], feed);
             showNotice('');
         } catch (error) {
             showNotice(`Unable to update favorites: ${error.message}`, true);
@@ -68,7 +68,7 @@
         const cards = [];
         for (let offset = 0; offset < ownerIds.length; offset += idChunkSize) {
             const { data, error } = await client.from('community_cards')
-                .select('*, owner:community_profiles(username)')
+                .select('*, owner:community_profiles!owner_id(username)')
                 .in('owner_id', ownerIds.slice(offset, offset + idChunkSize))
                 .order('created_at', { ascending: false })
                 .limit(feedLimit);

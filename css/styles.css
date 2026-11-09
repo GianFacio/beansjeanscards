@@ -491,12 +491,19 @@ h2 {
     object-fit: contain
 }
 
+/* A rotated photo swaps its width and height, so size it to fit the screen after the turn. */
+.photo-zoom-dialog > img.is-sideways,
+.photo-zoom-dialog > img.is-sideways-reversed {
+    max-width: calc(94dvh - 72px);
+    max-height: min(calc(94vw - 34px), calc(94dvh - 72px))
+}
+
 .photo-zoom-dialog > img.is-sideways {
-    transform: rotate(90deg) scale(.82)
+    transform: rotate(90deg)
 }
 
 .photo-zoom-dialog > img.is-sideways-reversed {
-    transform: rotate(-90deg) scale(.82)
+    transform: rotate(-90deg)
 }
 
 .photo-slot-action {
@@ -874,8 +881,8 @@ h2 {
     color: var(--graded-badge-text)
 }
 
-/* Gold badge colors identify PSA 10 cards in both themes. */
-.grade-badge-psa10 {
+/* Gold badge colors identify grail cards in both themes. */
+.grade-badge-grail {
     border-color: var(--psa10-badge-border);
     background: var(--psa10-badge-background);
     color: var(--psa10-badge-text)
@@ -1691,6 +1698,13 @@ img.community-avatar {
     margin: 0
 }
 
+.community-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px
+}
+
 .favorite-control {
     display: inline-flex;
     align-items: center;
@@ -1786,6 +1800,21 @@ img.community-avatar {
     width: 100%;
     height: auto;
     object-fit: contain
+}
+
+.community-card-image {
+    position: relative
+}
+
+.community-card[data-grail="true"] .community-card-image img {
+    outline: 4px solid #d4af37;
+    outline-offset: -4px;
+    box-shadow: 0 0 10px rgba(212, 175, 55, .55)
+}
+
+.community-card-detail-viewer figure img.is-grail {
+    outline: 4px solid #d4af37;
+    outline-offset: -4px
 }
 
 .community-card .product-meta {

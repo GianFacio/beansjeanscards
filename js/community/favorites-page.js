@@ -31,11 +31,14 @@
     });
 
     grid.addEventListener('click', async event => {
-        const button = event.target.closest('[data-favorite-card]');
+        const button = event.target.closest('[data-favorite-card], [data-like-card]');
         if (!button) return;
         try {
+            const cardId = button.closest('article').dataset.cardId;
+            const isLike = 'likeCard' in button.dataset;
             const favorited = await window.communityFavorites.toggle(button);
-            if (!favorited) button.closest('article').remove();
+            if (isLike) await window.communityFavorites.refreshCounts([cardId], grid);
+            if (!favorited && 'favoriteCard' in button.dataset) button.closest('article').remove();
             empty.hidden = grid.children.length > 0;
             showNotice('');
         } catch (error) {
@@ -53,7 +56,7 @@
         showNotice('Loading favorites…');
         await window.communityFavorites.load(session);
         const { data, error } = await window.communityClient.from('community_favorites')
-            .select('card:community_cards(*, owner:community_profiles(username))')
+            .select('card:community_cards(*, owner:community_profiles!owner_id(username))')
             .eq('user_id', session.user.id)
             .order('created_at', { ascending: false });
         if (error) throw error;

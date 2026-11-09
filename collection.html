@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Card Collection | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="css/styles.css?v=6">
+    <link rel="stylesheet" href="css/styles.css?v=9">
     <!-- Warm the database host connection before the card list and photos load. -->
     <link rel="preconnect" href="https://tmskcpzbcszpxydrpepj.supabase.co" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -167,7 +167,7 @@
                             <img src="${window.escapeStoreHTML(item.photos[0].src)}" alt="${window.escapeStoreHTML(item.photos[0].alt)}" loading="${index === 0 ? 'eager' : 'lazy'}" fetchpriority="${index === 0 ? 'high' : 'auto'}" decoding="async">
                             </a>
                             <div class="product-meta">
-                                <span class="grade-badge ${item.grade === 'Raw' ? 'grade-badge-raw' : item.grade === 'PSA 10' ? 'grade-badge-psa10' : 'grade-badge-graded'}">${window.escapeStoreHTML(item.grade)}</span>
+                                <span class="grade-badge ${item.grade === 'Raw' ? 'grade-badge-raw' : 'grade-badge-graded'}">${window.escapeStoreHTML(item.grade)}</span>
                                 <div class="detail">${window.escapeStoreHTML(item.detail)}</div>
                             </div>
                             <h3>${window.escapeStoreHTML(item.name)}</h3>

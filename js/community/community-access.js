@@ -174,6 +174,11 @@ communityNewPasswordForm.addEventListener('submit', async event => {
     event.preventDefault();
     const button = communityNewPasswordForm.querySelector('[type="submit"]');
     button.disabled = true;
+    if (communityNewPasswordForm.elements.password.value !== communityNewPasswordForm.elements.confirm_password.value) {
+        showCommunityAuthMessage(communityNewPasswordForm, 'Passwords do not match.', true);
+        button.disabled = false;
+        return;
+    }
     showCommunityAuthMessage(communityNewPasswordForm, 'Saving…');
     try {
         const { data, error } = await communityClient.auth.updateUser({ password: communityNewPasswordForm.elements.password.value });
@@ -200,6 +205,11 @@ communitySignUpForm.addEventListener('submit', async event => {
     event.preventDefault();
     const button = communitySignUpForm.querySelector('[type="submit"]');
     button.disabled = true;
+    if (communitySignUpForm.elements.password.value !== communitySignUpForm.elements.confirm_password.value) {
+        showCommunityAuthMessage(communitySignUpForm, 'Passwords do not match.', true);
+        button.disabled = false;
+        return;
+    }
     showCommunityAuthMessage(communitySignUpForm, 'Creating your account…');
 
     try {

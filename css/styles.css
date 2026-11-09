@@ -1558,6 +1558,10 @@ img.community-avatar {
     font-size: 38px
 }
 
+.profile-avatar.is-clickable {
+    cursor: zoom-in
+}
+
 .profile-summary-text {
     min-width: 0
 }

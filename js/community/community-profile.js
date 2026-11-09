@@ -511,7 +511,17 @@
             image.src = imageUrl;
             image.alt = '';
             avatar.append(image);
+            avatar.classList.add('is-clickable');
+            avatar.setAttribute('role', 'button');
+            avatar.setAttribute('tabindex', '0');
+            avatar.setAttribute('aria-label', 'View profile photo');
+            avatar.removeAttribute('aria-hidden');
         } else {
+            avatar.classList.remove('is-clickable');
+            avatar.removeAttribute('role');
+            avatar.removeAttribute('tabindex');
+            avatar.removeAttribute('aria-label');
+            avatar.setAttribute('aria-hidden', 'true');
             avatar.textContent = initials(profile);
         }
 
@@ -743,6 +753,24 @@
         zoomImage.src = detailImage.src;
         zoomImage.alt = detailImage.alt;
         zoomDialog.showModal();
+    });
+    const avatarZoomDialog = document.querySelector('#profile-avatar-zoom-dialog');
+    function openAvatarZoom() {
+        const image = document.querySelector('#profile-avatar img');
+        if (!image) return;
+        document.querySelector('#profile-avatar-zoom-image').src = image.src;
+        avatarZoomDialog.showModal();
+    }
+    document.querySelector('#profile-avatar').addEventListener('click', openAvatarZoom);
+    document.querySelector('#profile-avatar').addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openAvatarZoom();
+        }
+    });
+    document.querySelector('#profile-avatar-zoom-close').addEventListener('click', () => avatarZoomDialog.close());
+    avatarZoomDialog.addEventListener('click', event => {
+        if (event.target === avatarZoomDialog) avatarZoomDialog.close();
     });
     document.querySelector('#community-card-zoom-close').addEventListener('click', () => zoomDialog.close());
     zoomDialog.addEventListener('click', event => {

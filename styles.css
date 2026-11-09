@@ -1452,6 +1452,48 @@ img.community-avatar {
     cursor: pointer
 }
 
+.profile-notifications-toggle {
+    position: relative
+}
+
+.profile-notifications-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--page-background);
+    border-radius: 50%;
+    background: #dc3545;
+    transform: translate(40%, -40%)
+}
+
+.profile-notifications-list {
+    display: grid;
+    gap: 12px;
+    margin: 18px 0 0;
+    padding: 0;
+    list-style: none
+}
+
+.profile-notifications-list li {
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    line-height: 1.5;
+    overflow-wrap: anywhere
+}
+
+.profile-notifications-list a {
+    color: var(--text-color)
+}
+
+.profile-notifications-list time {
+    display: block;
+    color: var(--muted-color);
+    font-size: 12px
+}
+
 .profile-visibility[hidden] {
     display: none
 }

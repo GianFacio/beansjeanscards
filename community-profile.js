@@ -1101,6 +1101,7 @@
                 document.querySelector('#profile-editor h2').textContent = 'Edit collector profile';
             }
         }
+        if (isOwner) window.profileNotifications.start(currentUser.id);
         await loadCards(activeProfile);
         if (favoritesError) setMessage(collectionNotice, `Unable to load favorites: ${favoritesError}`, true);
         const requestedCard = new URLSearchParams(window.location.search).get('card');

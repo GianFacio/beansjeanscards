@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="A public collector profile and card collection.">
     <title>Collector Profile | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
     <link rel="preconnect" href="https://tmskcpzbcszpxydrpepj.supabase.co" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -46,9 +46,18 @@
                     <span id="profile-visibility" class="profile-visibility" hidden></span>
                     <button id="profile-edit-toggle" class="profile-visibility profile-edit-toggle" type="button" aria-haspopup="dialog" aria-controls="profile-editor" aria-expanded="false" hidden>Edit</button>
                     <button id="profile-add-card-toggle" class="profile-visibility profile-edit-toggle" type="button" aria-haspopup="dialog" aria-controls="collection-editor" aria-expanded="false" hidden>Add Card</button>
+                    <button id="profile-notifications-toggle" class="profile-visibility profile-edit-toggle profile-notifications-toggle" type="button" aria-haspopup="dialog" aria-controls="profile-notifications" aria-expanded="false" hidden>Notifications<span id="profile-notifications-badge" class="profile-notifications-badge" aria-hidden="true" hidden></span></button>
                 </div>
+                <p id="profile-notifications-status" class="community-form-message" role="status" hidden></p>
             </div>
         </section>
+
+        <dialog id="profile-notifications" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="profile-notifications-title">
+            <button id="profile-notifications-close" class="photo-zoom-close" type="button" aria-label="Close notifications" autofocus>&times;</button>
+            <h2 id="profile-notifications-title">Notifications</h2>
+            <p id="profile-notifications-message" class="community-form-message" role="status" aria-live="polite" hidden></p>
+            <ul id="profile-notifications-list" class="profile-notifications-list"></ul>
+        </dialog>
 
         <dialog id="profile-editor" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="profile-editor-title">
             <button id="profile-editor-close" class="photo-zoom-close" type="button" aria-label="Close profile editor" autofocus>&times;</button>
@@ -349,7 +358,8 @@
     <script src="community-navigation.js?v=2"></script>
     <script src="community-access.js?v=3"></script>
     <script src="community-favorites.js?v=1"></script>
-    <script src="community-profile.js?v=3"></script>
+    <script src="profile-notifications.js?v=1"></script>
+    <script src="community-profile.js?v=4"></script>
     <script src="theme.js"></script>
 </body>
 

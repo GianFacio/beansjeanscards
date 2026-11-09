@@ -1,5 +1,6 @@
 -- Run after supabase-community-setup.sql to enable personal favorites.
 -- Then run supabase-community-favorite-counts.sql to enable favorite counts.
+-- Run supabase-community-notifications.sql to enable favorite notifications.
 create table if not exists public.community_favorites (
     user_id uuid not null references auth.users (id) on delete cascade,
     card_id uuid not null references public.community_cards (id) on delete cascade,

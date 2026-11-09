@@ -75,9 +75,7 @@
             if (error) throw error;
             cards.push(...data);
         }
-        return cards
-            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-            .slice(0, feedLimit);
+        return cards;
     }
 
     async function loadStorePhotos(cards) {
@@ -131,8 +129,11 @@
             showEmpty("You're not following anyone yet. Follow a collector to see their new cards here.", true);
             return;
         }
-        const cards = await loadFeedCards(ownerIds);
-        const storePhotos = await loadStorePhotos(cards);
+        const allCards = await loadFeedCards(ownerIds);
+        const storePhotos = await loadStorePhotos(allCards);
+        const cards = allCards
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, feedLimit);
         if (signedOut) return;
         if (cards.length === 0) {
             showNotice('');

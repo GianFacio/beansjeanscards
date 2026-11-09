@@ -42,10 +42,8 @@ window.profileFollows = (function () {
         }
     }
 
-    function renderFollowButton(signedIn) {
-        slot.innerHTML = signedIn
-            ? window.communityFollows.buttonMarkup(profile)
-            : '<button type="button" class="follow-button" data-follow-signin>Follow</button>';
+    function renderFollowButton() {
+        slot.innerHTML = window.communityFollows.buttonMarkup(profile);
     }
 
     async function openList(kind) {
@@ -78,7 +76,7 @@ window.profileFollows = (function () {
     async function start(activeProfile, session, isOwner) {
         profile = activeProfile;
         ownerView = isOwner;
-        const signedIn = Boolean(session?.user);
+        slot.replaceChildren();
         followersButton.disabled = !ownerView;
         followingButton.disabled = !ownerView;
         refreshCounts();
@@ -88,7 +86,7 @@ window.profileFollows = (function () {
             setMessage(error.message, true);
             console.warn(error.message);
         }
-        if (!ownerView) renderFollowButton(signedIn);
+        if (!ownerView) renderFollowButton();
     }
 
     followersButton.addEventListener('click', () => ownerView && openList('followers'));
@@ -98,10 +96,8 @@ window.profileFollows = (function () {
         if (event.target === dialog) dialog.close();
     });
 
-    slot.addEventListener('click', event => {
-        if (event.target.closest('[data-follow-signin]')) {
-            document.querySelector('#community-join-trigger').click();
-        }
+    window.addEventListener('community-session-changed', event => {
+        if (!event.detail.session?.user) slot.replaceChildren();
     });
     window.communityFollows.bind(slot, text => setMessage(text, Boolean(text)));
     window.communityFollows.bind(list, text => setMessage(text, Boolean(text)));

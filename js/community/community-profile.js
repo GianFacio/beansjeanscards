@@ -571,11 +571,11 @@
             return Number(second.grade.slice(4)) - Number(first.grade.slice(4));
         });
         const recentCards = [...(data || [])].sort((first, second) => {
-            const addedOrder = second.created_at.localeCompare(first.created_at);
+            const addedOrder = new Date(second.created_at) - new Date(first.created_at);
             if (addedOrder) return addedOrder;
             const firstOriginal = storePhotosById.get(first.source_store_card_id)?.createdAt || first.created_at;
             const secondOriginal = storePhotosById.get(second.source_store_card_id)?.createdAt || second.created_at;
-            return secondOriginal.localeCompare(firstOriginal);
+            return new Date(secondOriginal) - new Date(firstOriginal);
         });
         const cards = await Promise.all(orderedCards.map(async card => {
             let photos;

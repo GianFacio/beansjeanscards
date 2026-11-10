@@ -534,7 +534,7 @@
         document.querySelector('#profile-bio').textContent = profile.bio;
         const visibility = document.querySelector('#profile-visibility');
         visibility.textContent = profile.is_founder ? 'Founder' : '';
-        visibility.hidden = !profile.is_founder;
+        document.querySelector('#profile-founder-row').hidden = !profile.is_founder;
         visibility.classList.toggle('is-founder', profile.is_founder);
         summary.hidden = false;
     }

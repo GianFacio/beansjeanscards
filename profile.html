@@ -42,6 +42,9 @@
                 <p id="profile-username" class="community-eyebrow"></p>
                 <h1 id="profile-display-name"></h1>
                 <p id="profile-bio" class="profile-bio"></p>
+                <div id="profile-founder-row" class="profile-founder-row" hidden>
+                    <span id="profile-visibility" class="profile-visibility is-founder"></span>
+                </div>
                 <div id="profile-follow-stats" class="follow-stats" hidden>
                     <button id="profile-followers-count" type="button" aria-haspopup="dialog" aria-controls="profile-follow-dialog"><strong>0</strong> followers</button>
                     <button id="profile-following-count" type="button" aria-haspopup="dialog" aria-controls="profile-follow-dialog"><strong>0</strong> following</button>
@@ -49,7 +52,6 @@
                 </div>
                 <div class="profile-badges">
                     <span id="profile-follow-slot"></span>
-                    <span id="profile-visibility" class="profile-visibility" hidden></span>
                     <button id="profile-edit-toggle" class="profile-visibility profile-edit-toggle" type="button" aria-haspopup="dialog" aria-controls="profile-editor" aria-expanded="false" hidden>Edit</button>
                     <button id="profile-add-card-toggle" class="profile-visibility profile-edit-toggle" type="button" aria-haspopup="dialog" aria-controls="collection-editor" aria-expanded="false" hidden>Add Card</button>
                     <button id="profile-notifications-toggle" class="profile-visibility profile-edit-toggle profile-notifications-toggle" type="button" aria-haspopup="dialog" aria-controls="profile-notifications" aria-expanded="false" hidden>Notifications<span id="profile-notifications-badge" class="profile-notifications-badge" aria-hidden="true" hidden></span></button>

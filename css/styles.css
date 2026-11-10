@@ -1538,6 +1538,16 @@ img.community-avatar {
     white-space: pre-wrap
 }
 
+.profile-founder-row {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 10px
+}
+
+.profile-founder-row[hidden] {
+    display: none
+}
+
 .profile-visibility {
     display: inline-block;
     box-sizing: border-box;

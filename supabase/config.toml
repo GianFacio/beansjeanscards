@@ -1,2 +1,5 @@
 [functions.community-sign-in]
 verify_jwt = false
+
+[functions.community-delete-account]
+verify_jwt = false

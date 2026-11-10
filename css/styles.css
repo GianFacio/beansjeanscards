@@ -301,12 +301,6 @@ h2 {
     font-size: 13px
 }
 
-/* Spacing for the card price. */
-.slab-price {
-    display: block;
-    margin: 24px 0
-}
-
 /* Transparent-style link back to the full collection. */
 .collection-link {
     display: inline-block;
@@ -797,11 +791,6 @@ h2 {
     }
 }
 
-/* Transparent product art area keeps the image unobstructed. */
-.product-art {
-    background: transparent
-}
-
 /* Clickable product image without default button decoration. */
 .product-image-button {
     display: grid;
@@ -818,14 +807,6 @@ h2 {
     content: "";
     grid-area: 1 / 1;
     aspect-ratio: 0.596
-}
-
-/* Preserve product-art proportions when it fills the available width. */
-.product-art img {
-    display: block;
-    width: 100%;
-    height: auto;
-    object-fit: contain
 }
 
 /* Preserve source image ratios and align image bottoms across cards. */
@@ -933,8 +914,7 @@ h2 {
 }
 
 .admin-page h1,
-.admin-form h2,
-.admin-card-list h2 {
+.admin-form h2 {
     font: normal 30px Georgia, serif
 }
 
@@ -1007,31 +987,17 @@ h2 {
     display: block
 }
 
-.admin-form small,
-.admin-heading p,
-.admin-card-row small {
+.admin-form small {
     color: var(--muted-color);
     font-size: 13px;
     font-weight: normal
 }
 
-.admin-heading,
-.admin-card-row,
 .admin-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px
-}
-
-.admin-card-row {
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border-color)
-}
-
-.admin-card-row strong,
-.admin-card-row small {
-    display: block
 }
 
 .visually-hidden-file {
@@ -1448,12 +1414,6 @@ img.community-avatar {
     line-height: 1.45
 }
 
-.profile-page > .community-back-link {
-    display: inline-block;
-    margin-bottom: 22px;
-    color: var(--muted-color)
-}
-
 .profile-photo-slot {
     width: min(100%, 170px);
     margin-inline: auto
@@ -1669,21 +1629,6 @@ img.community-avatar {
 
 .community-panel h2 {
     margin-bottom: 16px
-}
-
-.community-checkbox {
-    display: flex !important;
-    align-items: flex-start;
-    gap: 10px !important;
-    font-weight: normal !important;
-    line-height: 1.45
-}
-
-.community-checkbox input {
-    flex: 0 0 18px;
-    width: 18px;
-    height: 18px;
-    margin: 1px 0 0
 }
 
 .profile-collection-heading {
@@ -2105,12 +2050,6 @@ img.community-avatar {
 
     .community-profiles {
         grid-template-columns: repeat(2, minmax(0, 1fr))
-    }
-
-    .admin-heading,
-    .admin-card-row {
-        align-items: flex-start;
-        flex-direction: column
     }
 
 }

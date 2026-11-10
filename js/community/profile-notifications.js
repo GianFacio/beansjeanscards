@@ -40,6 +40,17 @@
         return count;
     }
 
+    async function unreadLikeCount() {
+        const { count, error } = await client.from('community_like_notifications')
+            .select('id', { count: 'exact', head: true })
+            .eq('recipient_id', userId).eq('is_read', false);
+        if (error) {
+            if (isMissingFollows(error)) return 0;
+            throw error;
+        }
+        return count;
+    }
+
     async function refreshBadge() {
         if (!userId) return;
         const request = ++badgeRequest;
@@ -48,7 +59,7 @@
                 .select('id', { count: 'exact', head: true })
                 .eq('recipient_id', userId).eq('is_read', false);
             if (error) throw error;
-            const count = favoriteCount + await unreadFollowCount();
+            const count = favoriteCount + await unreadFollowCount() + await unreadLikeCount();
             if (request !== badgeRequest || !userId) return;
             badge.hidden = count === 0;
             button.setAttribute('aria-label', count ? 'Notifications, new alerts' : 'Notifications');
@@ -76,6 +87,24 @@
             if (error) throw error;
             notifications.push(...data);
             if (data.length < pageSize) return notifications;
+        }
+    }
+
+    async function loadLikeNotifications() {
+        const likes = [];
+        for (let offset = 0; ; offset += pageSize) {
+            const { data, error } = await client.from('community_like_notifications')
+                .select('id, created_at, is_read, actor:community_profiles!actor_id(username), card:community_cards!card_id(name, photo_path, back_photo_path, source_store_card_id)')
+                .eq('recipient_id', userId)
+                .order('created_at', { ascending: false })
+                .order('id', { ascending: false })
+                .range(offset, offset + pageSize - 1);
+            if (error) {
+                if (isMissingFollows(error)) return [];
+                throw error;
+            }
+            likes.push(...data);
+            if (data.length < pageSize) return likes.map(item => ({ ...item, kind: 'like' }));
         }
     }
 
@@ -145,7 +174,7 @@
             image.alt = notification.card.name;
             image.loading = 'lazy';
             const text = document.createElement('span');
-            text.textContent = `@${notification.actor.username} favorited your card`;
+            text.textContent = `@${notification.actor.username} ${notification.kind === 'like' ? 'liked' : 'favorited'} your card`;
             item.append(image, text);
             list.append(item);
         }
@@ -159,11 +188,11 @@
         list.replaceChildren();
         showMessage('Loading notifications...');
         try {
-            const [favorites, follows] = await Promise.all([loadNotifications(), loadFollowNotifications()]);
-            const notifications = [...favorites, ...follows]
+            const [favorites, follows, likes] = await Promise.all([loadNotifications(), loadFollowNotifications(), loadLikeNotifications()]);
+            const notifications = [...favorites, ...likes, ...follows]
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             if (!userId || request !== dialogRequest) return;
-            const storePhotos = await loadStorePhotos(favorites);
+            const storePhotos = await loadStorePhotos([...favorites, ...likes]);
             if (!userId || request !== dialogRequest) return;
             await renderNotifications(notifications, storePhotos);
             if (!userId || request !== dialogRequest) return;
@@ -172,6 +201,14 @@
                 const { error } = await client.from('community_favorite_notifications')
                     .update({ is_read: true }).eq('recipient_id', userId)
                     .in('id', unreadIds.slice(offset, offset + pageSize));
+                if (error) throw error;
+                if (!userId || request !== dialogRequest) return;
+            }
+            const unreadLikeIds = likes.filter(item => !item.is_read).map(item => item.id);
+            for (let offset = 0; offset < unreadLikeIds.length; offset += pageSize) {
+                const { error } = await client.from('community_like_notifications')
+                    .update({ is_read: true }).eq('recipient_id', userId)
+                    .in('id', unreadLikeIds.slice(offset, offset + pageSize));
                 if (error) throw error;
                 if (!userId || request !== dialogRequest) return;
             }

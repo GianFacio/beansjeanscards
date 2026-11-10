@@ -6,6 +6,10 @@
     const editToggle = document.querySelector('#profile-edit-toggle');
     const addCardToggle = document.querySelector('#profile-add-card-toggle');
     const editor = document.querySelector('#profile-editor');
+    const deleteSection = document.querySelector('#profile-delete-section');
+    const deleteForm = document.querySelector('#profile-delete-form');
+    const deleteOpen = document.querySelector('#profile-delete-open');
+    const deleteMessage = document.querySelector('#profile-delete-message');
     const profileForm = document.querySelector('#profile-edit-form');
     const editMessage = document.querySelector('#profile-edit-message');
     const avatarInput = profileForm.elements.avatar;
@@ -696,6 +700,44 @@
         cardFilters.hidden = cards.length === 0;
     }
 
+    function resetDeleteForm() {
+        deleteForm.hidden = true;
+        deleteForm.reset();
+        deleteOpen.hidden = false;
+        document.querySelector('#profile-delete-confirm').disabled = true;
+        setMessage(deleteMessage, '');
+    }
+    deleteOpen.addEventListener('click', () => {
+        deleteOpen.hidden = true;
+        deleteForm.hidden = false;
+        deleteForm.elements.confirm.focus();
+    });
+    document.querySelector('#profile-delete-cancel').addEventListener('click', resetDeleteForm);
+    editor.addEventListener('close', resetDeleteForm);
+    deleteForm.elements.confirm.addEventListener('input', () => {
+        document.querySelector('#profile-delete-confirm').disabled = deleteForm.elements.confirm.value !== 'DELETE';
+    });
+    deleteForm.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (deleteForm.elements.confirm.value !== 'DELETE') return;
+        const button = document.querySelector('#profile-delete-confirm');
+        button.disabled = true;
+        setMessage(deleteMessage, 'Deleting your account…');
+        try {
+            const { data, error } = await client.functions.invoke('community-delete-account');
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            window.communitySignOutInProgress = true;
+            await client.auth.signOut({ scope: 'local' });
+            window.location.assign('community.html');
+        } catch (error) {
+            let text = error.message;
+            try { text = (await error.context.json()).error || text; } catch { /* keep the default message */ }
+            setMessage(deleteMessage, `Unable to delete the account: ${text}`, true);
+            button.disabled = deleteForm.elements.confirm.value !== 'DELETE';
+        }
+    });
+
     editToggle.addEventListener('click', () => {
         setMessage(notice, '');
         populateEditor(activeProfile);
@@ -1229,6 +1271,7 @@
             populateEditor(activeProfile);
             editToggle.hidden = false;
             addCardToggle.hidden = false;
+            deleteSection.hidden = !isOwner;
             if (isAdmin && !isOwner) {
                 document.querySelector('#profile-editor h2').textContent = 'Edit collector profile';
             }

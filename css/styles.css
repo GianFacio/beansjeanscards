@@ -2381,3 +2381,31 @@ img.community-avatar {
     }
 
 }
+
+.profile-danger-zone {
+    margin-top: 22px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color)
+}
+
+.profile-danger-zone h3 {
+    margin: 0 0 6px;
+    font-size: 16px
+}
+
+.profile-danger-zone p {
+    margin: 0 0 12px;
+    color: var(--muted-color);
+    font-size: 14px
+}
+
+.profile-delete-open,
+.profile-delete-confirm {
+    color: #c9302c;
+    border-color: #c9302c
+}
+
+.profile-delete-confirm:not(:disabled) {
+    color: #fff;
+    background: #c9302c
+}

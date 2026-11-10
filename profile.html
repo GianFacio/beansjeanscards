@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="A public collector profile and card collection.">
     <title>Collector Profile | Beans Jeans Card Club</title>
-    <link rel="stylesheet" href="css/styles.css?v=21">
+    <link rel="stylesheet" href="css/styles.css?v=22">
     <link rel="preconnect" href="https://tmskcpzbcszpxydrpepj.supabase.co" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 </head>
@@ -105,6 +105,21 @@
                 <p id="profile-edit-message" class="community-form-message" role="status" aria-live="polite" hidden></p>
                 <button class="filter" type="submit">Save profile</button>
             </form>
+            <section id="profile-delete-section" class="profile-danger-zone" hidden>
+                <h3>Delete account</h3>
+                <p>Permanently removes your profile, cards, photos, likes and follows. This can&rsquo;t be undone.</p>
+                <form id="profile-delete-form" class="community-form" hidden>
+                    <label>Type DELETE to confirm
+                        <input name="confirm" type="text" autocomplete="off" required>
+                    </label>
+                    <p id="profile-delete-message" class="community-form-message" role="status" aria-live="polite" hidden></p>
+                    <div class="store-modal-actions">
+                        <button id="profile-delete-cancel" class="store-modal-button store-modal-cancel" type="button">Cancel</button>
+                        <button id="profile-delete-confirm" class="store-modal-button store-modal-confirm profile-delete-confirm" type="submit" disabled>Delete forever</button>
+                    </div>
+                </form>
+                <button id="profile-delete-open" class="filter profile-delete-open" type="button">Delete my account</button>
+            </section>
         </dialog>
 
         <dialog id="collection-editor" class="community-card-detail-dialog profile-form-dialog" aria-labelledby="collection-editor-title">
@@ -487,7 +502,7 @@
     <script src="js/community/profile-notifications.js?v=4"></script>
     <script src="js/community/profile-follows.js?v=4"></script>
     <script src="js/community/card-photo-crop.js?v=1"></script>
-    <script src="js/community/community-profile.js?v=18"></script>
+    <script src="js/community/community-profile.js?v=19"></script>
     <script src="js/core/theme.js"></script>
 </body>
 

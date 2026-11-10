@@ -60,7 +60,7 @@ Deno.serve(async (request) => {
     const { data: isAdmin, error: adminError } = await userClient.rpc("is_store_admin");
     if (adminError) throw adminError;
     if (isAdmin) {
-      return jsonResponse({ error: "Store admin accounts can't be deleted here." }, 403);
+      return jsonResponse({ error: "Admin accounts can't be deleted here." }, 403);
     }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {

@@ -1,4 +1,4 @@
-// Load public member profiles and collections; only owners and store admins can manage them.
+// Load public member profiles and collections; only owners and admins can manage them.
 (async function () {
     const client = window.communityClient;
     const notice = document.querySelector('#profile-notice');
@@ -620,7 +620,7 @@
             if (storeCardError) throw storeCardError;
             for (const storeCard of storeCards || []) {
                 const photos = (storeCard.photos || []).filter(photo => photo?.src);
-                if (photos.length === 0) throw new Error(`The store card ${storeCard.id} has no display photo.`);
+                if (photos.length === 0) throw new Error(`The linked card ${storeCard.id} has no display photo.`);
                 storePhotosById.set(storeCard.id, { photos, title: storeCard.title, photoCount: (storeCard.photos || []).length, createdAt: storeCard.created_at });
             }
         }
@@ -650,7 +650,7 @@
                 }
             } else if (card.source_store_card_id) {
                 const storeCard = storePhotosById.get(card.source_store_card_id);
-                if (!storeCard) throw new Error(`The store card ${card.source_store_card_id} could not be loaded.`);
+                if (!storeCard) throw new Error(`The linked card ${card.source_store_card_id} could not be loaded.`);
                 photos = storeCard.photos;
             } else {
                 throw new Error(`The card ${card.name} has no photo.`);
@@ -831,7 +831,7 @@
         document.querySelector('#community-card-edit-photos').hidden = storePhotos && !isAdmin;
         const linkedNotice = document.querySelector('#community-card-linked-photos');
         linkedNotice.hidden = !storePhotos || isAdmin;
-        linkedNotice.textContent = 'Only a store admin can change photos for this linked card.';
+        linkedNotice.textContent = 'Only an admin can change photos for this linked card.';
         setMessage(cardEditMessage, '');
         cardEditPanel.hidden = false;
         resizeCardName(cardEditForm.elements.name);
@@ -866,9 +866,9 @@
                 back_photo: cardEditForm.elements.back_photo.files[0]
             };
             const storePhotosChanged = storePhotoSource && (removedSides.size > 0 || photoFiles.front_photo || photoFiles.back_photo);
-            if (storePhotosChanged && !isAdmin) throw new Error('Only a store admin can change photos for this linked card.');
+            if (storePhotosChanged && !isAdmin) throw new Error('Only an admin can change photos for this linked card.');
             if (storePhotosChanged && entry.storePhotoCount !== entry.photos.length) {
-                throw new Error('The store card contains an invalid photo entry. Correct it in the store catalog before editing photos.');
+                throw new Error('The linked card contains an invalid photo entry. Correct it in the admin page before editing photos.');
             }
             const assignedIndexes = new Set(storeSlots.map(slot => slot.index).filter(index => index >= 0));
             const extraStorePhotos = storePhotoSource ? entry.photos.filter((photo, index) => !assignedIndexes.has(index)) : [];
@@ -964,7 +964,7 @@
             renderSelectedCard();
             resetPhotoSlots(cardEditForm, activeCards.get(selectedCardId));
             if (cleanupError) {
-                setMessage(cardEditMessage, `Card updated, but previous store photo cleanup failed: ${cleanupError.message}`, true);
+                setMessage(cardEditMessage, `Card updated, but previous photo cleanup failed: ${cleanupError.message}`, true);
                 return;
             }
             if (replacedPhotoPaths.length) {
@@ -1140,7 +1140,7 @@
                 if (cleanupError) console.error('Unable to remove unused card photos:', cleanupError);
             }
             const message = /row-level security|violates row-level security/i.test(error.message)
-                    ? 'Only this profile owner or the store admin can add cards to this collection.'
+                    ? 'Only this profile owner or an admin can add cards to this collection.'
                     : cardSaveError(error);
             setMessage(cardMessage, `Unable to add card: ${message}`, true);
         } finally {

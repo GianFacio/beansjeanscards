@@ -70,7 +70,7 @@ body {
     flex-direction: column;
     color: var(--text-color);
     background: var(--page-background);
-    font: 16px Arial, sans-serif
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif
 }
 
 /* Center the header and page content within a readable width. */
@@ -200,7 +200,7 @@ a {
     align-items: center;
     gap: 10px;
     margin: 0;
-    font: 600 20px Arial, sans-serif
+    font: 600 20px system-ui, -apple-system, "Segoe UI", sans-serif
 }
 
 .store-modal-header h2 i {
@@ -1264,10 +1264,8 @@ img.community-avatar {
 
 .feed-day {
     margin: 22px 0 10px;
-    color: var(--muted-color);
-    font-size: 13px;
-    letter-spacing: .08em;
-    text-transform: uppercase
+    color: var(--text-color);
+    font: normal 22px Georgia, serif
 }
 
 .follow-list {
@@ -1585,6 +1583,22 @@ img.community-avatar {
     width: 13px;
     height: 13px;
     border: 2px solid var(--page-background);
+    border-radius: 50%;
+    background: #dc3545;
+    transform: translate(40%, -40%)
+}
+
+[data-following-nav] {
+    position: relative
+}
+
+.feed-notifications-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 13px;
+    height: 13px;
+    border: 2px solid var(--navbar-background);
     border-radius: 50%;
     background: #dc3545;
     transform: translate(40%, -40%)

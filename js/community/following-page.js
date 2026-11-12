@@ -141,6 +141,7 @@
             return;
         }
         renderFeed(cards, storePhotos);
+        window.communityFeedBadge.markViewed(session.user.id, cards[0].created_at);
         try {
             await window.communityFavorites.refreshCounts(cards.map(card => card.id), feed);
             if (!signedOut) showNotice('');

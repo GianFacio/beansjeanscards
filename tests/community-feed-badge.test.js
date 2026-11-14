@@ -128,6 +128,22 @@ test('read state is account-specific and never moves backwards', async () => {
     assert.equal(app.link.hidden, true);
 });
 
+test('read state preserves timestamp precision within the same millisecond', async () => {
+    const base = new Date(Date.now() - 60000).toISOString().slice(0, -1);
+    const earlier = `${base}100Z`;
+    const later = `${base}900Z`;
+    const app = await setup({
+        follows: [{ follower_id: 'viewer', followed_id: 'collector' }],
+        cards: [{ owner_id: 'collector', created_at: later }],
+        stored: { 'community-feed-seen:viewer': earlier }
+    });
+    assert.equal(app.link.badge.hidden, false);
+    app.markViewed('viewer', later);
+    await app.flush();
+    assert.equal(app.values.get('community-feed-seen:viewer'), later);
+    assert.equal(app.link.badge.hidden, true);
+});
+
 test('a failed check is exposed rather than reported as a successful check', async () => {
     const app = await setup();
     app.setFail(true);

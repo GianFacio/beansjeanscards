@@ -61,7 +61,9 @@
             if (!newestCreatedAt) return;
             const key = badgeKey(viewerId);
             const previous = localStorage.getItem(key);
-            if (!previous || new Date(newestCreatedAt) > new Date(previous)) {
+            const newestTime = Date.parse(newestCreatedAt);
+            const previousTime = previous ? Date.parse(previous) : NaN;
+            if (!previous || newestTime > previousTime || (newestTime === previousTime && newestCreatedAt > previous)) {
                 localStorage.setItem(key, newestCreatedAt);
             }
             refreshFeedBadge();

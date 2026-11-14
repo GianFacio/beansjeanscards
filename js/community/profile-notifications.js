@@ -29,44 +29,20 @@
         return error.code === 'PGRST205' || error.code === '42P01';
     }
 
-    async function unreadFollowCount() {
-        const { count, error } = await client.from('community_follows')
-            .select('follower_id', { count: 'exact', head: true })
-            .eq('followed_id', userId).eq('is_read', false);
-        if (error) {
-            if (isMissingFollows(error)) return 0;
-            throw error;
-        }
-        return count;
-    }
-
-    async function unreadLikeCount() {
-        const { count, error } = await client.from('community_like_notifications')
-            .select('id', { count: 'exact', head: true })
-            .eq('recipient_id', userId).eq('is_read', false);
-        if (error) {
-            if (isMissingFollows(error)) return 0;
-            throw error;
-        }
-        return count;
-    }
-
     async function refreshBadge() {
         if (!userId) return;
         const request = ++badgeRequest;
+        const currentUser = userId;
+        window.communityNotificationBadge.refresh();
         try {
-            const { count: favoriteCount, error } = await client.from('community_favorite_notifications')
-                .select('id', { count: 'exact', head: true })
-                .eq('recipient_id', userId).eq('is_read', false);
-            if (error) throw error;
-            const count = favoriteCount + await unreadFollowCount() + await unreadLikeCount();
-            if (request !== badgeRequest || !userId) return;
+            const count = await window.communityNotificationBadge.countUnread(client, currentUser);
+            if (request !== badgeRequest || currentUser !== userId) return;
             badge.hidden = count === 0;
             button.setAttribute('aria-label', count ? 'Notifications, new alerts' : 'Notifications');
             status.hidden = true;
             status.textContent = '';
         } catch (error) {
-            if (request !== badgeRequest || !userId) return;
+            if (request !== badgeRequest || currentUser !== userId) return;
             console.error('Unable to check notifications:', error);
             button.setAttribute('aria-label', 'Notifications, unable to check for new alerts');
             status.textContent = `Unable to check notifications: ${describeError(error)}`;
@@ -212,9 +188,11 @@
                 if (error) throw error;
                 if (!userId || request !== dialogRequest) return;
             }
-            if (follows.some(item => !item.is_read)) {
+            const unreadFollowerIds = follows.filter(item => !item.is_read).map(item => item.follower_id);
+            for (let offset = 0; offset < unreadFollowerIds.length; offset += pageSize) {
                 const { error } = await client.from('community_follows')
-                    .update({ is_read: true }).eq('followed_id', userId).eq('is_read', false);
+                    .update({ is_read: true }).eq('followed_id', userId)
+                    .in('follower_id', unreadFollowerIds.slice(offset, offset + pageSize));
                 if (error) throw error;
                 if (!userId || request !== dialogRequest) return;
             }

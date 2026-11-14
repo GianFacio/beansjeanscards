@@ -48,7 +48,7 @@ async function setup({ follows = [], cards = [], stored = {}, user = 'viewer' } 
     const context = {
         document: {
             hidden: false,
-            querySelector() { return brand; },
+            querySelector(selector) { return selector === '.site-brand' ? brand : null; },
             querySelectorAll(selector) { return selector.includes('data-following-nav') ? [link] : []; },
             createElement() { return { ...badge, setAttribute() {} }; },
             addEventListener(name, callback) { listeners[name] = callback; }

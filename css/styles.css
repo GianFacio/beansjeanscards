@@ -1588,7 +1588,7 @@ img.community-avatar {
     transform: translate(40%, -40%)
 }
 
-[data-following-nav] {
+[data-following-nav], #community-my-profile {
     position: relative
 }
 

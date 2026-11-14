@@ -3,12 +3,22 @@
     const siteBrand = document.querySelector('.site-brand');
     if (!siteBrand) return;
     const feedLinks = [...document.querySelectorAll('[data-following-nav]')];
+    const profileLink = document.querySelector('#community-my-profile');
     const badgeKey = userId => `community-feed-seen:${userId}`;
     const recentWindow = 7 * 24 * 60 * 60 * 1000;
     const chunkSize = 50;
     let userId = null;
     let badgeRequest = 0;
+    let profileBadgeRequest = 0;
     let client;
+
+    if (profileLink) {
+        const badge = document.createElement('span');
+        badge.className = 'feed-notifications-badge';
+        badge.hidden = true;
+        badge.setAttribute('aria-hidden', 'true');
+        profileLink.append(badge);
+    }
 
     feedLinks.forEach(link => {
         const badge = document.createElement('span');
@@ -56,6 +66,48 @@
         }
     }
 
+    async function countUnreadNotifications(notificationClient, recipientId) {
+        async function count(table, column, recipientColumn, optional = false) {
+            const { count, error } = await notificationClient.from(table)
+                .select(column, { count: 'exact', head: true })
+                .eq(recipientColumn, recipientId).eq('is_read', false);
+            if (error) {
+                if (optional && (error.code === 'PGRST205' || error.code === '42P01')) return 0;
+                throw error;
+            }
+            return count;
+        }
+        const [favorites, follows, likes] = await Promise.all([
+            count('community_favorite_notifications', 'id', 'recipient_id'),
+            count('community_follows', 'follower_id', 'followed_id', true),
+            count('community_like_notifications', 'id', 'recipient_id', true)
+        ]);
+        return favorites + follows + likes;
+    }
+
+    async function refreshProfileBadge() {
+        if (!userId || !profileLink) return;
+        const request = ++profileBadgeRequest;
+        const currentUser = userId;
+        try {
+            const count = await countUnreadNotifications(client, currentUser);
+            if (request !== profileBadgeRequest || currentUser !== userId) return;
+            profileLink.querySelector('.feed-notifications-badge').hidden = count === 0;
+            profileLink.setAttribute('aria-label', count ? 'My Profile, new notifications' : 'My Profile');
+            profileLink.title = '';
+        } catch (error) {
+            if (request !== profileBadgeRequest || currentUser !== userId) return;
+            console.error('Unable to check profile notifications:', error);
+            profileLink.setAttribute('aria-label', 'My Profile, unable to check for new notifications');
+            profileLink.title = 'Unable to check for new notifications. Refresh the page to try again.';
+        }
+    }
+
+    window.communityNotificationBadge = {
+        countUnread: countUnreadNotifications,
+        refresh: refreshProfileBadge
+    };
+
     window.communityFeedBadge = {
         markViewed(viewerId, newestCreatedAt) {
             if (!newestCreatedAt) return;
@@ -73,7 +125,13 @@
     function updateProfileLink(session) {
         userId = session?.user?.id || null;
         ++badgeRequest;
+        ++profileBadgeRequest;
         setFeedBadge(false);
+        if (profileLink) {
+            profileLink.querySelector('.feed-notifications-badge').hidden = true;
+            profileLink.setAttribute('aria-label', 'My Profile');
+            profileLink.title = '';
+        }
         siteBrand.href = session?.user
             ? `profile.html?user=${encodeURIComponent(session.user.id)}`
             : 'index.html';
@@ -83,7 +141,10 @@
         document.querySelectorAll('[data-signin-nav]').forEach(link => {
             link.hidden = Boolean(session?.user);
         });
-        if (userId) setTimeout(refreshFeedBadge, 0);
+        if (userId) setTimeout(() => {
+            refreshFeedBadge();
+            refreshProfileBadge();
+        }, 0);
     }
 
     try {
@@ -97,8 +158,14 @@
             if (userId && event.key === badgeKey(userId)) refreshFeedBadge();
         });
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) refreshFeedBadge();
+            if (!document.hidden) {
+                refreshFeedBadge();
+                refreshProfileBadge();
+            }
         });
+        setInterval(() => {
+            if (!document.hidden) refreshProfileBadge();
+        }, 30000);
         setInterval(() => {
             if (!document.hidden) refreshFeedBadge();
         }, 60000);

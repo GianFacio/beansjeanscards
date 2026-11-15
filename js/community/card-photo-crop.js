@@ -10,6 +10,8 @@ window.cardPhotoCrop = (function () {
     const viewport = document.querySelector('#card-crop-viewport');
     const image = document.querySelector('#card-crop-image');
     const zoom = document.querySelector('#card-crop-zoom');
+    const rotation = document.querySelector('#card-crop-rotation');
+    const rotationValue = document.querySelector('#card-crop-rotation-value');
     const title = document.querySelector('#card-crop-title');
     const message = document.querySelector('#card-crop-message');
     const applyButton = document.querySelector('#card-crop-apply');
@@ -19,6 +21,7 @@ window.cardPhotoCrop = (function () {
     let size = sizes.raw;
     let baseScale = 1;
     let scale = 1;
+    let angle = 0;
     let left = 0;
     let top = 0;
     let drag = null;
@@ -36,12 +39,32 @@ window.cardPhotoCrop = (function () {
     function position(nextLeft, nextTop) {
         const width = image.naturalWidth * scale;
         const height = image.naturalHeight * scale;
-        left = Math.min(0, Math.max(viewport.clientWidth - width, nextLeft));
-        top = Math.min(0, Math.max(viewport.clientHeight - height, nextTop));
+        const viewportWidth = viewport.clientWidth;
+        const viewportHeight = viewport.clientHeight;
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+        const offsetX = nextLeft + width / 2 - viewportWidth / 2;
+        const offsetY = nextTop + height / 2 - viewportHeight / 2;
+        const limitX = Math.max(0, (width - Math.abs(cos) * viewportWidth - Math.abs(sin) * viewportHeight) / 2);
+        const limitY = Math.max(0, (height - Math.abs(sin) * viewportWidth - Math.abs(cos) * viewportHeight) / 2);
+        const localX = Math.min(limitX, Math.max(-limitX, cos * offsetX + sin * offsetY));
+        const localY = Math.min(limitY, Math.max(-limitY, -sin * offsetX + cos * offsetY));
+        left = viewportWidth / 2 + cos * localX - sin * localY - width / 2;
+        top = viewportHeight / 2 + sin * localX + cos * localY - height / 2;
         image.style.width = `${width}px`;
         image.style.height = `${height}px`;
         image.style.left = `${left}px`;
         image.style.top = `${top}px`;
+        image.style.transform = `rotate(${angle}rad)`;
+    }
+
+    function updateBaseScale() {
+        const cos = Math.abs(Math.cos(angle));
+        const sin = Math.abs(Math.sin(angle));
+        baseScale = Math.max(
+            (cos * viewport.clientWidth + sin * viewport.clientHeight) / image.naturalWidth,
+            (sin * viewport.clientWidth + cos * viewport.clientHeight) / image.naturalHeight
+        );
     }
 
     function setZoom(value) {
@@ -49,6 +72,21 @@ window.cardPhotoCrop = (function () {
         const focusY = (viewport.clientHeight / 2 - top) / scale;
         scale = baseScale * Number(value);
         position(viewport.clientWidth / 2 - focusX * scale, viewport.clientHeight / 2 - focusY * scale);
+    }
+
+    function setRotation(value) {
+        const oldScale = scale;
+        const centerX = left + image.naturalWidth * oldScale / 2;
+        const centerY = top + image.naturalHeight * oldScale / 2;
+        angle = Number(value) * Math.PI / 180;
+        rotationValue.textContent = `${value}°`;
+        updateBaseScale();
+        scale = baseScale * Number(zoom.value);
+        const ratio = scale / oldScale;
+        position(
+            viewport.clientWidth / 2 + (centerX - viewport.clientWidth / 2) * ratio - image.naturalWidth * scale / 2,
+            viewport.clientHeight / 2 + (centerY - viewport.clientHeight / 2) * ratio - image.naturalHeight * scale / 2
+        );
     }
 
     function release() {
@@ -79,7 +117,10 @@ window.cardPhotoCrop = (function () {
         setMessage('');
         dialog.showModal();
         await new Promise(resolve => window.requestAnimationFrame(resolve));
-        baseScale = Math.max(viewport.clientWidth / image.naturalWidth, viewport.clientHeight / image.naturalHeight);
+        angle = 0;
+        rotation.value = '0';
+        rotationValue.textContent = '0°';
+        updateBaseScale();
         scale = baseScale;
         zoom.value = '1';
         position(
@@ -101,17 +142,11 @@ window.cardPhotoCrop = (function () {
             if (!context) throw new Error('Your browser could not prepare the cropped photo.');
             context.fillStyle = '#fff';
             context.fillRect(0, 0, canvas.width, canvas.height);
-            context.drawImage(
-                image,
-                -left / scale,
-                -top / scale,
-                viewport.clientWidth / scale,
-                viewport.clientHeight / scale,
-                0,
-                0,
-                canvas.width,
-                canvas.height
-            );
+            context.scale(canvas.width / viewport.clientWidth, canvas.height / viewport.clientHeight);
+            context.translate(left + image.naturalWidth * scale / 2, top + image.naturalHeight * scale / 2);
+            context.rotate(angle);
+            context.drawImage(image, -image.naturalWidth * scale / 2, -image.naturalHeight * scale / 2,
+                image.naturalWidth * scale, image.naturalHeight * scale);
             const blob = await new Promise((resolve, reject) => {
                 canvas.toBlob(result => {
                     if (result) resolve(result);
@@ -130,6 +165,7 @@ window.cardPhotoCrop = (function () {
     }
 
     zoom.addEventListener('input', () => setZoom(zoom.value));
+    rotation.addEventListener('input', () => setRotation(rotation.value));
     viewport.addEventListener('pointerdown', event => {
         if (event.button !== 0) return;
         viewport.setPointerCapture(event.pointerId);

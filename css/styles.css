@@ -643,6 +643,13 @@ h2 {
     object-fit: contain
 }
 
+.photo-zoom-dialog > #profile-avatar-zoom-image {
+    width: min(100%, 700px, calc(94dvh - 72px));
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 50%
+}
+
 .photo-zoom-close {
     position: absolute;
     top: 8px;
